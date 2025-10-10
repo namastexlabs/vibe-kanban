@@ -1,5 +1,5 @@
 {
-  "name": "vibe-kanban",
+  "name": "automagik-forge",
   "private": true,
   "version": "0.0.55",
   "type": "module",
@@ -58,7 +58,7 @@
     "simple-icons": "^15.16.0",
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",
-    "vibe-kanban-web-companion": "^0.0.4",
+    "automagik-forge-web-companion": "^0.0.4",
     "zustand": "^4.5.4"
   },
   "devDependencies": {

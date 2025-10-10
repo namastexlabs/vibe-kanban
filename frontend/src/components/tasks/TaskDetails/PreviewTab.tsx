@@ -186,7 +186,7 @@ export default function PreviewTab({
               <li>
                 {t('preview.troubleAlert.item3')}{' '}
                 <a
-                  href="https://github.com/BloopAI/vibe-kanban-web-companion"
+                  href="https://github.com/NamastexLabs/automagik-forge-web-companion"
                   target="_blank"
                   className="underline font-bold"
                 >
