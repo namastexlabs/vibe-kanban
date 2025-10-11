@@ -11,8 +11,8 @@
 <p align="center">Get 10X more out of Claude Code, Gemini CLI, Codex, Amp and other coding agents...</p>
 <p align="center">
   <a href="https://www.npmjs.com/package/automagik-forge"><img alt="npm" src="https://img.shields.io/npm/v/automagik-forge?style=flat-square" /></a>
-  <a href="https://github.com/NamastexLabs/automagik-forge/blob/main/.github/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/NamastexLabs/automagik-forge/.github%2Fworkflows%2Fpublish.yml" /></a>
-  <a href="https://deepwiki.com/NamastexLabs/automagik-forge"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="https://github.com/namastexlabs/automagik-forge/blob/main/.github/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/namastexlabs/automagik-forge/.github%2Fworkflows%2Fpublish.yml" /></a>
+  <a href="https://deepwiki.com/namastexlabs/automagik-forge"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 ![](frontend/public/automagik-forge-screenshot-overview.png)
@@ -43,11 +43,11 @@ Please head to the [website](https://vibekanban.com/docs) for the latest documen
 
 ## Support
 
-We use [GitHub Discussions](https://github.com/NamastexLabs/automagik-forge/discussions) for feature requests. Please open a discussion to create a feature request. For bugs please open an issue on this repo.
+We use [GitHub Discussions](https://github.com/namastexlabs/automagik-forge/discussions) for feature requests. Please open a discussion to create a feature request. For bugs please open an issue on this repo.
 
 ## Contributing
 
-We would prefer that ideas and changes are first raised with the core team via [GitHub Discussions](https://github.com/NamastexLabs/automagik-forge/discussions) or Discord, where we can discuss implementation details and alignment with the existing roadmap. Please do not open PRs without first discussing your proposal with the team.
+We would prefer that ideas and changes are first raised with the core team via [GitHub Discussions](https://github.com/namastexlabs/automagik-forge/discussions) or Discord, where we can discuss implementation details and alignment with the existing roadmap. Please do not open PRs without first discussing your proposal with the team.
 
 ## Development
 
