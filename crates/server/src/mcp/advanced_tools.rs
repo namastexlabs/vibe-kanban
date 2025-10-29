@@ -18,11 +18,131 @@
 use rmcp::schemars;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
+use db::models::task_attempt::TaskAttempt;
 
 #[derive(Debug, Serialize, schemars::JsonSchema)]
 pub struct UploadImageResponse {
     #[schemars(description = "Uploaded image ID")]
     pub image_id: Uuid,
+}
+
+// TaskAttemptSummary - simplified representation of a TaskAttempt for MCP responses
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct TaskAttemptSummary {
+    pub id: String,
+    pub task_id: String,
+    pub branch: String,
+    pub target_branch: String,
+    pub executor: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl TaskAttemptSummary {
+    pub fn from_task_attempt(attempt: TaskAttempt) -> Self {
+        Self {
+            id: attempt.id.to_string(),
+            task_id: attempt.task_id.to_string(),
+            branch: attempt.branch,
+            target_branch: attempt.target_branch,
+            executor: attempt.executor,
+            created_at: attempt.created_at,
+            updated_at: attempt.updated_at,
+        }
+    }
+}
+
+// Response types
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct StopTaskAttemptResponse {
+    pub stopped: bool,
+    pub attempt_id: String,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct MergeTaskAttemptResponse {
+    pub success: bool,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct DeleteProjectResponse {
+    pub deleted: bool,
+    pub project_id: String,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct GetTaskAttemptResponse {
+    pub task_attempt: TaskAttemptSummary,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct ListTaskAttemptsResponse {
+    pub attempts: Vec<TaskAttemptSummary>,
+    pub applied_filters: TaskAttemptFilters,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct TaskAttemptFilters {
+    pub project_id: Option<Uuid>,
+}
+
+// ============================================================================
+// PROJECT MANAGEMENT REQUEST TYPES
+// ============================================================================
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct CreateProjectRequest {
+    #[schemars(description = "Project name")]
+    pub name: String,
+    #[schemars(description = "Path to git repository")]
+    pub git_repo_path: String,
+    #[schemars(description = "Optional setup script")]
+    pub setup_script: Option<String>,
+    #[schemars(description = "Optional cleanup script")]
+    pub cleanup_script: Option<String>,
+    #[schemars(description = "Optional dev script")]
+    pub dev_script: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct GetProjectRequest {
+    #[schemars(description = "Project ID")]
+    pub project_id: Uuid,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct UpdateProjectRequest {
+    #[schemars(description = "Project ID")]
+    pub project_id: Uuid,
+    #[schemars(description = "New project name")]
+    pub name: Option<String>,
+    #[schemars(description = "New git repo path")]
+    pub git_repo_path: Option<String>,
+    #[schemars(description = "New setup script")]
+    pub setup_script: Option<String>,
+    #[schemars(description = "New cleanup script")]
+    pub cleanup_script: Option<String>,
+    #[schemars(description = "New dev script")]
+    pub dev_script: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct DeleteProjectRequest {
+    #[schemars(description = "Project ID")]
+    pub project_id: Uuid,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct ListTaskAttemptsRequest {
+    #[schemars(description = "Optional project ID filter")]
+    pub project_id: Option<Uuid>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct GetTaskAttemptRequest {
+    #[schemars(description = "Task attempt ID")]
+    pub attempt_id: Uuid,
 }
 
 // ============================================================================

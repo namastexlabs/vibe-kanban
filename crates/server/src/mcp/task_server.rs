@@ -681,7 +681,8 @@ impl TaskServer {
         }
 
         TaskServer::success(&DeleteProjectResponse {
-            deleted_project_id: project_id.to_string(),
+            deleted: true,
+            project_id: project_id.to_string(),
         })
     }
 
@@ -774,8 +775,7 @@ impl TaskServer {
         };
 
         TaskServer::success(&ListTaskAttemptsResponse {
-            count: attempts.len(),
-            task_attempts: attempts
+            attempts: attempts
                 .into_iter()
                 .map(TaskAttemptSummary::from_task_attempt)
                 .collect(),
@@ -1304,7 +1304,7 @@ impl TaskServer {
         // Create multipart form with the image
         let part = match reqwest::multipart::Part::bytes(image_bytes)
             .file_name("image")
-            .mime_str(&mime_type)
+            .mime_str(mime_type.as_str())
         {
             Ok(p) => p,
             Err(e) => {
