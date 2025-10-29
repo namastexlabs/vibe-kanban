@@ -4,10 +4,10 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use reqwest::{StatusCode, header};
-use rust_embed::RustEmbed;
+use rust_embed::{RustEmbed, Embed};
 
 #[derive(RustEmbed)]
-#[folder = "../../frontend/dist"]
+#[folder = "../../../frontend/dist"]
 pub struct Assets;
 
 pub async fn serve_frontend(uri: axum::extract::Path<String>) -> impl IntoResponse {
