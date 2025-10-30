@@ -7,6 +7,14 @@
       "--mcp"
     ]
   },
+  "genie": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "automagik-genie@latest",
+      "mcp"
+    ]
+  },
   "context7": {
     "type": "http",
     "url": "https://mcp.context7.com/mcp",
@@ -21,11 +29,17 @@
     ]
   },
   "meta": {
-    "automagik_forge": {
+    "forge": {
       "name": "Automagik Forge",
       "description": "Create, update and delete Automagik Forge tasks",
-      "url": "https://www.vibekanban.com/docs/integrations/automagik-forge-mcp-server",
-      "icon": "favicon-af-light.svg"
+      "url": "https://www.gituhb.com/namastexlabs/automagik-forge",
+      "icon": "android-chrome-192x192.png"
+    },
+    "genie": {
+      "name": "Automagik Genie",
+      "description": "Your personal AI companion. Lives on your machine. Evolves with you.",
+      "url": "https://www.gituhb.com/namastexlabs/automagik-genie",
+      "icon": "android-chrome-192x192.png"
     },
     "context7": {
       "name": "Context7",
