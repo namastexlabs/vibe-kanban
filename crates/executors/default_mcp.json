@@ -33,19 +33,19 @@
       "name": "Forge",
       "description": "Core task management tools for Automagik Forge (7 tools)",
       "url": "https://forge.automag.ik",
-      "icon": "nmstx-logo.svg"
+      "icon": "android-chrome-512x512.png"
     },
     "forge-advanced": {
       "name": "Forge Advanced",
       "description": "Full backend API access with 56 tools (projects, processes, drafts, Omni)",
       "url": "https://forge.automag.ik",
-      "icon": "nmstx-logo.svg"
+      "icon": "android-chrome-512x512.png"
     },
     "genie": {
       "name": "Automagik Genie",
       "description": "AI agent orchestration and wish management",
       "url": "https://genie.automag.ik",
-      "icon": "nmstx-logo.svg"
+      "icon": "android-chrome-512x512.png"
     },
     "context7": {
       "name": "Context7",
