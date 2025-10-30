@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use reqwest::{StatusCode, header};
-use rust_embed::{RustEmbed, Embed};
+use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
 #[folder = "../../../frontend/dist"]
