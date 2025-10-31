@@ -621,7 +621,6 @@ impl TaskServer {
         TaskServer::success(&serde_json::json!({
             "project_id": project.id.to_string(),
         }))
-
     }
 
     #[tool(description = "Get project details by ID")]
@@ -1289,7 +1288,7 @@ impl TaskServer {
         &self,
         Parameters(UploadImageRequest { data, mime_type }): Parameters<UploadImageRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-// Decode base64 data
+        // Decode base64 data
         use base64::Engine;
         let image_bytes = match base64::engine::general_purpose::STANDARD.decode(&data) {
             Ok(bytes) => bytes,
@@ -1660,13 +1659,11 @@ impl TaskServer {
         Parameters(request): Parameters<ValidateOmniConfigRequest>,
     ) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/forge/omni/validate");
-        let result: serde_json::Value = match self
-            .send_json(self.client.post(&url).json(&request))
-            .await
-        {
-            Ok(r) => r,
-            Err(e) => return Ok(e),
-        };
+        let result: serde_json::Value =
+            match self.send_json(self.client.post(&url).json(&request)).await {
+                Ok(r) => r,
+                Err(e) => return Ok(e),
+            };
 
         TaskServer::success(&result)
     }
