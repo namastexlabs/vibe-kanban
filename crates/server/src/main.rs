@@ -77,9 +77,9 @@ async fn main() -> Result<(), AutomagikForgeError> {
             cleaned.trim().parse::<u16>().ok()
         })
         .unwrap_or_else(|| {
-            tracing::info!("No PORT environment variable set, using port 0 for auto-assignment");
-            0
-        }); // Use 0 to find free port if no specific port provided
+            tracing::info!("No PORT environment variable set, using default port 8887");
+            8887
+        }); // Use 8887 as default port if no specific port provided
 
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;

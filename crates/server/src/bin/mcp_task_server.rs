@@ -41,9 +41,20 @@ fn main() -> anyhow::Result<()> {
                         })?
                     }
                     Err(_) => {
-                        let port = read_port_file("automagik-forge").await?;
-                        tracing::info!("[MCP] Using port from port file: {}", port);
-                        port
+                        // Try reading port file, fall back to default port 8887
+                        match read_port_file("automagik-forge").await {
+                            Ok(port) => {
+                                tracing::info!("[MCP] Using port from port file: {}", port);
+                                port
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    "[MCP] Failed to read port file: {}. Using default port 8887",
+                                    e
+                                );
+                                8887
+                            }
+                        }
                     }
                 };
 
