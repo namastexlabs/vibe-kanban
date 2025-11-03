@@ -993,9 +993,18 @@ impl ContainerService for LocalContainerService {
             && self.is_container_clean(task_attempt).await?
             && !is_ahead
         {
-            let wrapper =
-                self.create_merged_diff_stream(&project_repo_path, &commit, stats_only)?;
-            return Ok(Box::pin(wrapper));
+            // Try to use merged diff stream, but fall back to live diff if the commit doesn't exist
+            match self.create_merged_diff_stream(&project_repo_path, &commit, stats_only) {
+                Ok(wrapper) => return Ok(Box::pin(wrapper)),
+                Err(e) => {
+                    tracing::warn!(
+                        "Failed to create merged diff stream for commit {}: {}. Falling back to live diff.",
+                        commit,
+                        e
+                    );
+                    // Fall through to live diff stream below
+                }
+            }
         }
 
         let container_ref = self.ensure_container_exists(task_attempt).await?;
