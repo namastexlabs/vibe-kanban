@@ -13,7 +13,7 @@ use utils::{
 };
 
 #[derive(Debug, Error)]
-pub enum VibeKanbanError {
+pub enum AutomagikForgeError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -25,7 +25,7 @@ pub enum VibeKanbanError {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), VibeKanbanError> {
+async fn main() -> Result<(), AutomagikForgeError> {
     sentry_utils::init_once(SentrySource::Backend);
 
     let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
@@ -77,9 +77,9 @@ async fn main() -> Result<(), VibeKanbanError> {
             cleaned.trim().parse::<u16>().ok()
         })
         .unwrap_or_else(|| {
-            tracing::info!("No PORT environment variable set, using port 0 for auto-assignment");
-            0
-        }); // Use 0 to find free port if no specific port provided
+            tracing::info!("No PORT environment variable set, using default port 8887");
+            8887
+        }); // Use 8887 as default port if no specific port provided
 
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;

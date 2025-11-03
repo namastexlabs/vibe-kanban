@@ -3,23 +3,15 @@
     "CLAUDE_CODE": {
       "DEFAULT": {
         "CLAUDE_CODE": {
+          "append_prompt": null,
           "dangerously_skip_permissions": true
-        }
-      },
-      "PLAN": {
-        "CLAUDE_CODE": {
-          "plan": true
-        }
-      },
-      "APPROVALS": {
-        "CLAUDE_CODE": {
-          "approvals": true
         }
       }
     },
     "AMP": {
       "DEFAULT": {
         "AMP": {
+          "append_prompt": null,
           "dangerously_allow_all": true
         }
       }
@@ -27,13 +19,8 @@
     "GEMINI": {
       "DEFAULT": {
         "GEMINI": {
+          "append_prompt": null,
           "model": "default",
-          "yolo": true
-        }
-      },
-      "FLASH": {
-        "GEMINI": {
-          "model": "flash",
           "yolo": true
         }
       }
@@ -41,30 +28,22 @@
     "CODEX": {
       "DEFAULT": {
         "CODEX": {
+          "append_prompt": null,
           "sandbox": "danger-full-access"
-        }
-      },
-      "HIGH": {
-        "CODEX": {
-          "sandbox": "danger-full-access",
-          "model_reasoning_effort": "high"
-        }
-      },
-      "APPROVALS": {
-        "CODEX": {
-          "sandbox": "workspace-write",
-          "ask_for_approval": "unless-trusted"
         }
       }
     },
     "OPENCODE": {
       "DEFAULT": {
-        "OPENCODE": {}
+        "OPENCODE": {
+          "append_prompt": null
+        }
       }
     },
     "QWEN_CODE": {
       "DEFAULT": {
         "QWEN_CODE": {
+          "append_prompt": null,
           "yolo": true
         }
       }
@@ -72,63 +51,17 @@
     "CURSOR_AGENT": {
       "DEFAULT": {
         "CURSOR_AGENT": {
+          "append_prompt": null,
           "force": true,
           "model": "auto"
-        }
-      },
-      "SONNET_4_5": {
-        "CURSOR_AGENT": {
-          "force": true,
-          "model": "sonnet-4.5"
-        }
-      },
-      "SONNET_4_5_THINKING": {
-        "CURSOR_AGENT": {
-          "force": true,
-          "model": "sonnet-4.5-thinking"
-        }
-      },
-      "OPUS_4_1": {
-        "CURSOR_AGENT": {
-          "force": true,
-          "model": "opus-4.1"
-        }
-      },
-      "GPT_5": {
-        "CURSOR_AGENT": {
-          "force": true,
-          "model": "gpt-5"
-        }
-      },
-      "GROK": {
-        "CURSOR_AGENT": {
-          "force": true,
-          "model": "grok"
         }
       }
     },
     "COPILOT": {
       "DEFAULT": {
         "COPILOT": {
+          "append_prompt": null,
           "allow_all_tools": true
-        }
-      },
-      "GPT_5": {
-        "COPILOT": {
-          "allow_all_tools": true,
-          "model": "gpt-5"
-        }
-      },
-      "CLAUDE_SONNET_4_5": {
-        "COPILOT": {
-          "allow_all_tools": true,
-          "model": "claude-sonnet-4.5"
-        }
-      },
-      "CLAUDE_SONNET_4": {
-        "COPILOT": {
-          "allow_all_tools": true,
-          "model": "claude-sonnet-4"
         }
       }
     }

@@ -1,10 +1,18 @@
 {
-  "vibe_kanban": {
+  "forge": {
     "command": "npx",
     "args": [
       "-y",
-      "vibe-kanban@latest",
+      "automagik-forge@latest",
       "--mcp"
+    ]
+  },
+  "genie": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "automagik-genie@latest",
+      "mcp"
     ]
   },
   "context7": {
@@ -21,11 +29,23 @@
     ]
   },
   "meta": {
-    "vibe_kanban": {
-      "name": "Vibe Kanban",
-      "description": "Create, update and delete Vibe Kanban tasks",
-      "url": "https://www.vibekanban.com/docs/integrations/vibe-kanban-mcp-server",
-      "icon": "favicon-vk-light.svg"
+    "forge": {
+      "name": "Forge",
+      "description": "Core task management tools for Automagik Forge (7 tools)",
+      "url": "https://forge.automag.ik",
+      "icon": "android-chrome-512x512.png"
+    },
+    "forge-advanced": {
+      "name": "Forge Advanced",
+      "description": "Full backend API access with 56 tools (projects, processes, drafts, Omni)",
+      "url": "https://forge.automag.ik",
+      "icon": "android-chrome-512x512.png"
+    },
+    "genie": {
+      "name": "Automagik Genie",
+      "description": "AI agent orchestration and wish management",
+      "url": "https://genie.automag.ik",
+      "icon": "android-chrome-512x512.png"
     },
     "context7": {
       "name": "Context7",
@@ -41,4 +61,3 @@
     }
   }
 }
-
