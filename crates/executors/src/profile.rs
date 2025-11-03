@@ -202,6 +202,12 @@ impl ExecutorConfigs {
         *cache = Self::load();
     }
 
+    /// Set cached executor profiles (used by Forge to inject per-workspace profiles)
+    pub fn set_cached(configs: ExecutorConfigs) {
+        let mut cache = EXECUTOR_PROFILES_CACHE.write().unwrap();
+        *cache = configs;
+    }
+
     /// Load executor profiles from file or defaults
     pub fn load() -> Self {
         let profiles_path = workspace_utils::assets::profiles_path();
