@@ -487,6 +487,7 @@ impl TaskServer {
             task_id,
             executor_profile_id,
             base_branch,
+            use_worktree: true, // Default to using worktrees for MCP-created attempts
         };
 
         let url = self.url("/api/task-attempts");

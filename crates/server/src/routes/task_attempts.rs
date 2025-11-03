@@ -132,6 +132,13 @@ pub struct CreateTaskAttemptBody {
     /// Executor profile specification
     pub executor_profile_id: ExecutorProfileId,
     pub base_branch: String,
+    /// If false, skip creating a git worktree and run in the main repo
+    #[serde(default = "default_use_worktree")]
+    pub use_worktree: bool,
+}
+
+fn default_use_worktree() -> bool {
+    true
 }
 
 impl CreateTaskAttemptBody {
@@ -152,10 +159,17 @@ pub async fn create_task_attempt(
         .ok_or(SqlxError::RowNotFound)?;
 
     let attempt_id = Uuid::new_v4();
-    let git_branch_name = deployment
-        .container()
-        .git_branch_from_task_attempt(&attempt_id, &task.title)
-        .await;
+
+    // If use_worktree is false, use the current branch (base_branch) directly
+    // Otherwise, generate a new branch name for the worktree
+    let git_branch_name = if payload.use_worktree {
+        deployment
+            .container()
+            .git_branch_from_task_attempt(&attempt_id, &task.title)
+            .await
+    } else {
+        payload.base_branch.clone()
+    };
 
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,

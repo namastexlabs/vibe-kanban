@@ -5,11 +5,7 @@
       "-y",
       "automagik-forge@latest",
       "--mcp"
-    ],
-    "env": {
-      "BACKEND_PORT": "8887",
-      "HOST": "127.0.0.1"
-    }
+    ]
   },
   "genie": {
     "command": "npx",
