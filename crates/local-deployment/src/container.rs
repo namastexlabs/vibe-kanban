@@ -349,7 +349,7 @@ impl LocalContainerService {
 
             if !ExecutionProcess::was_stopped(&db.pool, exec_id).await
                 && let Err(e) =
-                    ExecutionProcess::update_completion(&db.pool, exec_id, status, exit_code).await
+                    ExecutionProcess::update_completion(&db.pool, exec_id, status.clone(), exit_code).await
             {
                 tracing::error!("Failed to update execution process completion: {}", e);
             }
