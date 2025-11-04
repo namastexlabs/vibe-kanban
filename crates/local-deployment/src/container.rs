@@ -354,6 +354,35 @@ impl LocalContainerService {
                 tracing::error!("Failed to update execution process completion: {}", e);
             }
 
+            // Track task_attempt_failed event for non-zero exit codes (async, non-blocking)
+            if matches!(status, ExecutionProcessStatus::Failed)
+                && let Ok(ctx) = ExecutionProcess::load_context(&db.pool, exec_id).await
+                && config.read().await.analytics_enabled == Some(true)
+                && matches!(&ctx.execution_process.run_reason, ExecutionProcessRunReason::CodingAgent)
+                && let Some(analytics) = &analytics
+            {
+                analytics.analytics_service.track_event(
+                    &analytics.user_id,
+                    "task_attempt_failed",
+                    Some(json!({
+                        "task_id": ctx.task.id.to_string(),
+                        "project_id": ctx.task.project_id.to_string(),
+                        "attempt_id": ctx.task_attempt.id.to_string(),
+                        "exit_code": exit_code,
+                        "executor": ctx.execution_process.executor_action().ok()
+                            .and_then(|action| match &action.typ {
+                                executors::actions::ExecutorActionType::CodingAgentInitialRequest(req) =>
+                                    Some(req.executor_profile_id.executor.clone()),
+                                executors::actions::ExecutorActionType::CodingAgentFollowUpRequest(req) =>
+                                    Some(req.executor_profile_id.executor.clone()),
+                                _ => None,
+                            })
+                            .map(|e| e.to_string())
+                            .unwrap_or_else(|| "unknown".to_string()),
+                    })),
+                );
+            }
+
             if let Ok(ctx) = ExecutionProcess::load_context(&db.pool, exec_id).await {
                 // Update executor session summary if available
                 if let Err(e) = container.update_executor_session_summary(&exec_id).await {

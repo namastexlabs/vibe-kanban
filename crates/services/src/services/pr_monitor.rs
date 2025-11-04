@@ -146,6 +146,18 @@ impl PrMonitorService {
                     && let Ok(Some(task)) =
                         Task::find_by_id(&self.db.pool, task_attempt.task_id).await
                 {
+                    // Check if this is the first PR merge (count merged PRs before this one)
+                    let merged_count_before = sqlx::query_scalar::<_, i64>(
+                        "SELECT COUNT(*) FROM merges WHERE pr_status = 'merged' AND id != $1"
+                    )
+                    .bind(pr_merge.id)
+                    .fetch_one(&self.db.pool)
+                    .await
+                    .unwrap_or(0);
+
+                    let is_first_pr_merged = merged_count_before == 0;
+
+                    // Track pr_merged event (always)
                     analytics.analytics_service.track_event(
                         &analytics.user_id,
                         "pr_merged",
@@ -153,8 +165,23 @@ impl PrMonitorService {
                             "task_id": task_attempt.task_id.to_string(),
                             "task_attempt_id": task_attempt.id.to_string(),
                             "project_id": task.project_id.to_string(),
+                            "is_first": is_first_pr_merged,
                         })),
                     );
+
+                    // Track first_pr_merged milestone event (only once ever)
+                    if is_first_pr_merged {
+                        analytics.analytics_service.track_event(
+                            &analytics.user_id,
+                            "first_pr_merged",
+                            Some(json!({
+                                "task_id": task_attempt.task_id.to_string(),
+                                "task_attempt_id": task_attempt.id.to_string(),
+                                "project_id": task.project_id.to_string(),
+                                "pr_number": pr_merge.pr_info.number,
+                            })),
+                        );
+                    }
                 }
             }
         }
