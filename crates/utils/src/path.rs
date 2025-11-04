@@ -43,6 +43,17 @@ pub fn make_path_relative(path: &str, worktree_path: &str) -> String {
                 canon_worktree.display()
             );
 
+            // Detect cross-root scenario (e.g., worktree in /var/tmp, main repo in /home)
+            // This is expected behavior when paths don't share a common root
+            if !canon_path.starts_with(&canon_worktree) {
+                tracing::debug!(
+                    "Path is outside worktree root (cross-root scenario): '{}' not under '{}', returning absolute path",
+                    canon_path.display(),
+                    canon_worktree.display()
+                );
+                return path.to_string();
+            }
+
             match canon_path.strip_prefix(&canon_worktree) {
                 Ok(relative_path) => {
                     let result = relative_path.to_string_lossy().to_string();
