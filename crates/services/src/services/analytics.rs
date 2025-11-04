@@ -21,12 +21,20 @@ pub struct AnalyticsConfig {
 
 impl AnalyticsConfig {
     pub fn new() -> Option<Self> {
+        // Default PostHog credentials for Namastex Labs analytics
+        // These are write-only keys (safe to hardcode), users can override via env vars
+        const DEFAULT_KEY: &str = "phc_KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd";
+        const DEFAULT_ENDPOINT: &str = "https://us.i.posthog.com";
+
         let api_key = option_env!("POSTHOG_API_KEY")
             .map(|s| s.to_string())
-            .or_else(|| std::env::var("POSTHOG_API_KEY").ok())?;
+            .or_else(|| std::env::var("POSTHOG_API_KEY").ok())
+            .unwrap_or_else(|| DEFAULT_KEY.to_string());
+
         let api_endpoint = option_env!("POSTHOG_API_ENDPOINT")
             .map(|s| s.to_string())
-            .or_else(|| std::env::var("POSTHOG_API_ENDPOINT").ok())?;
+            .or_else(|| std::env::var("POSTHOG_API_ENDPOINT").ok())
+            .unwrap_or_else(|| DEFAULT_ENDPOINT.to_string());
 
         Some(Self {
             posthog_api_key: api_key,
