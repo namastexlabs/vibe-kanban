@@ -416,12 +416,10 @@ async fn update_profiles(
     // Try to parse as ExecutorProfileConfigs format
     match serde_json::from_str::<ExecutorConfigs>(&body) {
         Ok(executor_profiles) => {
-            // Save the profiles to file
-            match executor_profiles.save_overrides() {
+            // Update in-memory cache only (no file persistence)
+            match executor_profiles.update_cache() {
                 Ok(_) => {
-                    tracing::info!("Executor profiles saved successfully");
-                    // Reload the cached profiles
-                    ExecutorConfigs::reload();
+                    tracing::info!("Executor profiles cache updated successfully");
                     ResponseJson(ApiResponse::success(
                         "Executor profiles updated successfully".to_string(),
                     ))

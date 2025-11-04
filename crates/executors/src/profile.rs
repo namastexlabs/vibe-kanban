@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, str::FromStr, sync::RwLock};
+use std::{collections::HashMap, str::FromStr, sync::RwLock};
 
 use convert_case::{Case, Casing};
 use lazy_static::lazy_static;
@@ -208,43 +208,18 @@ impl ExecutorConfigs {
         *cache = configs;
     }
 
-    /// Load executor profiles from file or defaults
+    /// Load executor profiles (API-only mode - no file persistence)
     pub fn load() -> Self {
-        let profiles_path = workspace_utils::assets::profiles_path();
-
-        // Load defaults first
+        // Always return defaults - no file I/O
+        // Profile overrides managed via API only (in-memory cache)
         let mut defaults = Self::from_defaults();
         defaults.canonicalise();
-
-        // Try to load user overrides
-        let content = match fs::read_to_string(&profiles_path) {
-            Ok(content) => content,
-            Err(_) => {
-                tracing::info!("No user profiles.json found, using defaults only");
-                return defaults;
-            }
-        };
-
-        // Parse user overrides
-        match serde_json::from_str::<Self>(&content) {
-            Ok(mut user_overrides) => {
-                tracing::info!("Loaded user profile overrides from profiles.json");
-                user_overrides.canonicalise();
-                Self::merge_with_defaults(defaults, user_overrides)
-            }
-            Err(e) => {
-                tracing::error!(
-                    "Failed to parse user profiles.json: {}, using defaults only",
-                    e
-                );
-                defaults
-            }
-        }
+        tracing::debug!("Loaded default executor profiles (API-only mode, no file persistence)");
+        defaults
     }
 
-    /// Save user profile overrides to file (only saves what differs from defaults)
-    pub fn save_overrides(&self) -> Result<(), ProfileError> {
-        let profiles_path = workspace_utils::assets::profiles_path();
+    /// Update executor profiles cache (in-memory only, no file persistence)
+    pub fn update_cache(&self) -> Result<(), ProfileError> {
         let mut defaults = Self::from_defaults();
         defaults.canonicalise();
 
@@ -252,18 +227,14 @@ impl ExecutorConfigs {
         let mut self_clone = self.clone();
         self_clone.canonicalise();
 
-        // Compute differences from defaults
+        // Compute differences from defaults and validate
         let overrides = Self::compute_overrides(&defaults, &self_clone)?;
-
-        // Validate the merged result would be valid
         let merged = Self::merge_with_defaults(defaults, overrides.clone());
         Self::validate_merged(&merged)?;
 
-        // Write overrides directly to file
-        let content = serde_json::to_string_pretty(&overrides)?;
-        fs::write(&profiles_path, content)?;
-
-        tracing::info!("Saved profile overrides to {:?}", profiles_path);
+        // Update cache only - no file write
+        Self::set_cached(merged);
+        tracing::info!("Updated executor profiles cache (in-memory only, no file persistence)");
         Ok(())
     }
 
