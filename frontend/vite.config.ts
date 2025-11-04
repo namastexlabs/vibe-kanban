@@ -55,6 +55,12 @@ export default defineConfig({
     sentryVitePlugin({ org: "bloop-ai", project: "vibe-kanban" }),
     executorSchemasPlugin(),
   ],
+  define: {
+    // Pass FORGE_INSTALLATION_MODE to frontend as VITE_FORGE_INSTALLATION_MODE
+    'import.meta.env.VITE_FORGE_INSTALLATION_MODE': JSON.stringify(
+      process.env.FORGE_INSTALLATION_MODE || 'npm'
+    ),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

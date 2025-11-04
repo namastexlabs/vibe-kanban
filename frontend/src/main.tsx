@@ -98,6 +98,12 @@ if (
     capture_performance: true,
     autocapture: false,
     opt_out_capturing_by_default: true,
+    loaded: (posthog) => {
+      // Detect installation mode: "npm" (production) or "development" (local dev)
+      const installationMode =
+        import.meta.env.VITE_FORGE_INSTALLATION_MODE || 'npm';
+      posthog.register({ source: installationMode });
+    },
   });
 } else {
   console.warn(

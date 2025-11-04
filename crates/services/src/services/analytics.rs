@@ -85,7 +85,11 @@ impl AnalyticsService {
                 );
                 props.insert("version".to_string(), json!(env!("CARGO_PKG_VERSION")));
                 props.insert("device".to_string(), get_device_info());
-                props.insert("source".to_string(), json!("backend"));
+
+                // Detect installation mode: "npm" (production) or "development" (local dev)
+                let installation_mode = std::env::var("FORGE_INSTALLATION_MODE")
+                    .unwrap_or_else(|_| "npm".to_string());
+                props.insert("source".to_string(), json!(installation_mode));
             }
             payload["properties"] = event_properties;
         }
