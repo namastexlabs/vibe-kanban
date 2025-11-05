@@ -3,7 +3,7 @@ import { useTheme } from '@/components/theme-provider';
 import { ThemeMode } from 'shared/types';
 
 interface VibeStyleOverrideMessage {
-  type: 'VIBE_STYLE_OVERRIDE';
+  type: 'FORGE_STYLE_OVERRIDE';
   payload:
     | {
         kind: 'cssVars';
@@ -16,7 +16,7 @@ interface VibeStyleOverrideMessage {
 }
 
 interface VibeIframeReadyMessage {
-  type: 'VIBE_IFRAME_READY';
+  type: 'FORGE_IFRAME_READY';
 }
 
 // Component that adds postMessage listener for style overrides
@@ -29,7 +29,7 @@ export function AppWithStyleOverride({
 
   useEffect(() => {
     function handleStyleMessage(event: MessageEvent) {
-      if (event.data?.type !== 'VIBE_STYLE_OVERRIDE') return;
+      if (event.data?.type !== 'FORGE_STYLE_OVERRIDE') return;
 
       // Origin validation (only if VITE_PARENT_ORIGIN is configured)
       const allowedOrigin = import.meta.env.VITE_PARENT_ORIGIN;
@@ -43,7 +43,7 @@ export function AppWithStyleOverride({
 
       const message = event.data as VibeStyleOverrideMessage;
 
-      // CSS variable overrides (only --vibe-* prefixed variables)
+      // CSS variable overrides (only --forge-* prefixed variables)
       if (
         message.payload.kind === 'cssVars' &&
         typeof message.payload.variables === 'object'
@@ -69,7 +69,7 @@ export function AppWithStyleOverride({
     // Only send if we're in an iframe and have a parent
     if (window.parent && window.parent !== window) {
       const readyMessage: VibeIframeReadyMessage = {
-        type: 'VIBE_IFRAME_READY',
+        type: 'FORGE_IFRAME_READY',
       };
 
       // Send to specific origin if configured, otherwise send to any origin

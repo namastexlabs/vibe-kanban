@@ -191,7 +191,7 @@ impl ImageService {
             return Ok(());
         }
 
-        let images_dir = worktree_path.join(utils::path::VIBE_IMAGES_DIR);
+        let images_dir = worktree_path.join(utils::path::FORGE_IMAGES_DIR);
         std::fs::create_dir_all(&images_dir)?;
 
         // Create .gitignore to ignore all files in this directory
@@ -220,7 +220,7 @@ impl ImageService {
     pub fn canonicalise_image_paths(prompt: &str, worktree_path: &Path) -> String {
         let pattern = format!(
             r#"!\[([^\]]*)\]\(({}/[^)\s]+)\)"#,
-            regex::escape(utils::path::VIBE_IMAGES_DIR)
+            regex::escape(utils::path::FORGE_IMAGES_DIR)
         );
         let re = Regex::new(&pattern).unwrap();
 

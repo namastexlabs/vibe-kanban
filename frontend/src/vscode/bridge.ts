@@ -315,7 +315,7 @@ window.addEventListener('message', (e: MessageEvent) => {
       delete pasteResolvers[msg.requestId];
     }
   }
-  if (msg.type === 'VIBE_ADD_TO_INPUT' && typeof msg.text === 'string') {
+  if (msg.type === 'FORGE_ADD_TO_INPUT' && typeof msg.text === 'string') {
     const el =
       activeEditable() ||
       (document.querySelector(EDITABLE_SELECTOR) as

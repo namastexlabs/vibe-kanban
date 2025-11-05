@@ -130,7 +130,7 @@ Runtime:
 
 ## Release Workflow for Namastex Fork
 
-This is a fork of BloopAI/vibe-kanban maintained by Namastex Labs. We track modifications with incremental releases.
+This is a fork of namastexlabs/automagik-forge maintained by Namastex Labs. We track modifications with incremental releases.
 
 ### Creating Release Tags (Footprints)
 
@@ -153,7 +153,7 @@ git push origin v0.0.X-namastex-N
 
 # 4. Create GitHub release
 gh release create v0.0.X-namastex-N \
-  --repo namastexlabs/vibe-kanban \
+  --repo namastexlabs/automagik-forge \
   --title "v0.0.X-namastex-N" \
   --notes "## Changes
 
@@ -187,7 +187,7 @@ git push origin <your-branch>
 ### Critical Steps Checklist
 
 - [ ] Commit changes in upstream submodule
-- [ ] Create and push tag to namastexlabs/vibe-kanban
+- [ ] Create and push tag to namastexlabs/automagik-forge
 - [ ] Create GitHub release
 - [ ] **Checkout new tag in submodule** (`git checkout v0.0.X-namastex-N`)
 - [ ] Update .gitmodules in parent repo

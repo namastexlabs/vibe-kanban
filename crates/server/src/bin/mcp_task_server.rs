@@ -26,8 +26,8 @@ fn main() -> anyhow::Result<()> {
             tracing::debug!("[MCP] Starting MCP task server version {version}...");
 
             // Read backend port from port file or environment variable
-            let base_url = if let Ok(url) = std::env::var("VIBE_BACKEND_URL") {
-                tracing::info!("[MCP] Using backend URL from VIBE_BACKEND_URL: {}", url);
+            let base_url = if let Ok(url) = std::env::var("FORGE_BACKEND_URL") {
+                tracing::info!("[MCP] Using backend URL from FORGE_BACKEND_URL: {}", url);
                 url
             } else {
                 let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -41,7 +41,7 @@ fn main() -> anyhow::Result<()> {
                         })?
                     }
                     Err(_) => {
-                        let port = read_port_file("vibe-kanban").await?;
+                        let port = read_port_file("automagik-forge").await?;
                         tracing::info!("[MCP] Using port from port file: {}", port);
                         port
                     }
