@@ -91,7 +91,7 @@ shared/types.ts    # Auto-generated TypeScript types from Rust
    - Each executor (Claude, Gemini, etc.) implements common interface
    - Actions: `coding_agent_initial`, `coding_agent_follow_up`, `script`
 
-4. **MCP Integration**: Vibe Kanban acts as MCP server
+4. **MCP Integration**: Automagik Forge acts as MCP server
    - Tools: `list_projects`, `list_tasks`, `create_task`, `update_task`, etc.
    - AI agents can manage tasks via MCP protocol
 
@@ -119,7 +119,7 @@ shared/types.ts    # Auto-generated TypeScript types from Rust
 ### Environment Variables
 
 Build-time (set when building):
-- `GITHUB_CLIENT_ID`: GitHub OAuth app ID (default: Bloop AI's app)
+- `GITHUB_CLIENT_ID`: GitHub OAuth app ID (default: Namastex Labs's app)
 - `POSTHOG_API_KEY`: Analytics key (optional)
 
 Runtime:
@@ -127,3 +127,82 @@ Runtime:
 - `FRONTEND_PORT`: Frontend dev port (default: 3000)
 - `HOST`: Backend host (default: 127.0.0.1)
 - `DISABLE_WORKTREE_ORPHAN_CLEANUP`: Debug flag for worktrees
+
+## Release Workflow for Namastex Fork
+
+This is a fork of BloopAI/vibe-kanban maintained by Namastex Labs. We track modifications with incremental releases.
+
+### Creating Release Branches and Tags (Footprints)
+
+When you make changes to the fork, create a release branch and tag to leave a footprint for future upstream merges:
+
+```bash
+# 1. Commit your changes (in upstream submodule)
+cd /home/namastex/workspace/automagik-forge/upstream
+git add -A
+git commit -m "fix: your change description"
+
+# 2. Create and push release branch (increment -namastex-N)
+git checkout -b release/v0.0.X-namastex-N
+git push origin release/v0.0.X-namastex-N
+
+# 3. Create annotated tag on the release branch
+git tag -a v0.0.X-namastex-N -m "Release v0.0.X-namastex-N
+
+- Brief description of changes"
+
+# 4. Push tag to GitHub
+git push origin v0.0.X-namastex-N
+
+# 5. Create GitHub release
+gh release create v0.0.X-namastex-N \
+  --repo namastexlabs/vibe-kanban \
+  --title "v0.0.X-namastex-N" \
+  --notes "## Changes
+
+- Your change description
+
+## Commits
+- commit message (commit-hash)"
+```
+
+### Updating Parent Repo Gitmodule
+
+After creating a release branch and tag, update the parent automagik-forge repo:
+
+```bash
+# 1. Checkout the new release branch in submodule (CRITICAL STEP)
+cd /home/namastex/workspace/automagik-forge/upstream
+git checkout release/v0.0.X-namastex-N
+
+# 2. Navigate to parent and update .gitmodules
+cd /home/namastex/workspace/automagik-forge
+# Edit .gitmodules: branch = release/v0.0.X-namastex-N
+
+# 3. Commit .gitmodules and submodule pointer together
+git add .gitmodules upstream
+git commit -m "chore: update upstream submodule to release/v0.0.X-namastex-N"
+
+# 4. Push to remote
+git push origin <your-branch>
+```
+
+### Critical Steps Checklist
+
+- [ ] Commit changes in upstream submodule
+- [ ] Create and push release branch to namastexlabs/vibe-kanban
+- [ ] Create and push tag to namastexlabs/vibe-kanban
+- [ ] Create GitHub release
+- [ ] **Checkout release branch in submodule** (`git checkout release/v0.0.X-namastex-N`)
+- [ ] Update .gitmodules in parent repo to point to release branch
+- [ ] Commit both .gitmodules and upstream together
+- [ ] Push parent repo
+
+### Why This Workflow?
+
+- **Footprints**: Each `-namastex-N` increment tracks modifications from upstream rebase
+- **Surgical Reapplication**: When pulling new upstream versions, we can reapply changes surgically
+- **Traceability**: Clear history of what changed and when for easier merging
+- **Branch Pinning**: Parent repo points to release branches, avoiding detached HEAD confusion
+- **Git Status Clarity**: `git status` shows "On branch release/v0.0.X-namastex-N" instead of confusing detached HEAD messages
+- **Dual References**: Tags for releases, branches for development - best of both worlds
