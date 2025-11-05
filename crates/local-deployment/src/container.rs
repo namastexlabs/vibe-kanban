@@ -708,44 +708,62 @@ impl ContainerService for LocalContainerService {
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
-        WorktreeManager::create_worktree(
-            &project.git_repo_path,
-            &task_attempt.branch,
-            &worktree_path,
-            &task_attempt.target_branch,
-            true, // create new branch
+        // Query forge_task_attempt_config to check if we should use worktree
+        // Default to true for backward compatibility if row doesn't exist
+        let use_worktree = sqlx::query_scalar::<_, bool>(
+            "SELECT COALESCE((SELECT use_worktree FROM forge_task_attempt_config WHERE task_attempt_id = ?), 1)"
         )
-        .await?;
+        .bind(task_attempt.id)
+        .fetch_one(&self.db.pool)
+        .await
+        .unwrap_or(true); // Default to true if query fails
 
-        // Copy files specified in the project's copy_files field
-        if let Some(copy_files) = &project.copy_files
-            && !copy_files.trim().is_empty()
-        {
-            self.copy_project_files(&project.git_repo_path, &worktree_path, copy_files)
+        let container_ref_path = if use_worktree {
+            // Create worktree for isolated work
+            WorktreeManager::create_worktree(
+                &project.git_repo_path,
+                &task_attempt.branch,
+                &worktree_path,
+                &task_attempt.target_branch,
+                true, // create new branch
+            )
+            .await?;
+
+            // Copy files specified in the project's copy_files field
+            if let Some(copy_files) = &project.copy_files
+                && !copy_files.trim().is_empty()
+            {
+                self.copy_project_files(&project.git_repo_path, &worktree_path, copy_files)
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::warn!("Failed to copy project files: {}", e);
+                    });
+            }
+
+            // Copy task images from cache to worktree
+            if let Err(e) = self
+                .image_service
+                .copy_images_by_task_to_worktree(&worktree_path, task.id)
                 .await
-                .unwrap_or_else(|e| {
-                    tracing::warn!("Failed to copy project files: {}", e);
-                });
-        }
+            {
+                tracing::warn!("Failed to copy task images to worktree: {}", e);
+            }
 
-        // Copy task images from cache to worktree
-        if let Err(e) = self
-            .image_service
-            .copy_images_by_task_to_worktree(&worktree_path, task.id)
-            .await
-        {
-            tracing::warn!("Failed to copy task images to worktree: {}", e);
-        }
+            worktree_path
+        } else {
+            // No worktree - use project's main repository directly
+            PathBuf::from(&project.git_repo_path)
+        };
 
         // Update both container_ref and branch in the database
         TaskAttempt::update_container_ref(
             &self.db.pool,
             task_attempt.id,
-            &worktree_path.to_string_lossy(),
+            &container_ref_path.to_string_lossy(),
         )
         .await?;
 
-        Ok(worktree_path.to_string_lossy().to_string())
+        Ok(container_ref_path.to_string_lossy().to_string())
     }
 
     async fn delete_inner(&self, task_attempt: &TaskAttempt) -> Result<(), ContainerError> {
