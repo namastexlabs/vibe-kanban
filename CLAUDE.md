@@ -132,29 +132,26 @@ Runtime:
 
 This is a fork of BloopAI/vibe-kanban maintained by Namastex Labs. We track modifications with incremental releases.
 
-### Creating Release Branches and Tags (Footprints)
+### Creating Release Tags (Footprints)
 
-When you make changes to the fork, create a release branch and tag to leave a footprint for future upstream merges:
+When you make changes to the fork, create a release tag to leave a footprint for future upstream merges:
 
 ```bash
 # 1. Commit your changes (in upstream submodule)
 cd /home/namastex/workspace/automagik-forge/upstream
 git add -A
 git commit -m "fix: your change description"
+git push origin release/v0.0.X-namastex-Y
 
-# 2. Create and push release branch (increment -namastex-N)
-git checkout -b release/v0.0.X-namastex-N
-git push origin release/v0.0.X-namastex-N
-
-# 3. Create annotated tag on the release branch
+# 2. Create annotated tag (increment -namastex-N)
 git tag -a v0.0.X-namastex-N -m "Release v0.0.X-namastex-N
 
 - Brief description of changes"
 
-# 4. Push tag to GitHub
+# 3. Push tag to GitHub
 git push origin v0.0.X-namastex-N
 
-# 5. Create GitHub release
+# 4. Create GitHub release
 gh release create v0.0.X-namastex-N \
   --repo namastexlabs/vibe-kanban \
   --title "v0.0.X-namastex-N" \
@@ -168,20 +165,20 @@ gh release create v0.0.X-namastex-N \
 
 ### Updating Parent Repo Gitmodule
 
-After creating a release branch and tag, update the parent automagik-forge repo:
+After creating a release tag, update the parent automagik-forge repo:
 
 ```bash
-# 1. Checkout the new release branch in submodule (CRITICAL STEP)
+# 1. Checkout the new tag in submodule (CRITICAL STEP)
 cd /home/namastex/workspace/automagik-forge/upstream
-git checkout release/v0.0.X-namastex-N
+git checkout v0.0.X-namastex-N
 
 # 2. Navigate to parent and update .gitmodules
 cd /home/namastex/workspace/automagik-forge
-# Edit .gitmodules: branch = release/v0.0.X-namastex-N
+# Edit .gitmodules: branch = v0.0.X-namastex-N
 
 # 3. Commit .gitmodules and submodule pointer together
 git add .gitmodules upstream
-git commit -m "chore: update upstream submodule to release/v0.0.X-namastex-N"
+git commit -m "chore: update upstream submodule to v0.0.X-namastex-N"
 
 # 4. Push to remote
 git push origin <your-branch>
@@ -190,11 +187,10 @@ git push origin <your-branch>
 ### Critical Steps Checklist
 
 - [ ] Commit changes in upstream submodule
-- [ ] Create and push release branch to namastexlabs/vibe-kanban
 - [ ] Create and push tag to namastexlabs/vibe-kanban
 - [ ] Create GitHub release
-- [ ] **Checkout release branch in submodule** (`git checkout release/v0.0.X-namastex-N`)
-- [ ] Update .gitmodules in parent repo to point to release branch
+- [ ] **Checkout new tag in submodule** (`git checkout v0.0.X-namastex-N`)
+- [ ] Update .gitmodules in parent repo
 - [ ] Commit both .gitmodules and upstream together
 - [ ] Push parent repo
 
@@ -203,6 +199,35 @@ git push origin <your-branch>
 - **Footprints**: Each `-namastex-N` increment tracks modifications from upstream rebase
 - **Surgical Reapplication**: When pulling new upstream versions, we can reapply changes surgically
 - **Traceability**: Clear history of what changed and when for easier merging
-- **Branch Pinning**: Parent repo points to release branches, avoiding detached HEAD confusion
-- **Git Status Clarity**: `git status` shows "On branch release/v0.0.X-namastex-N" instead of confusing detached HEAD messages
-- **Dual References**: Tags for releases, branches for development - best of both worlds
+- **Gitmodule Pinning**: Parent repo always points to specific tested release tags
+
+### Understanding Detached HEAD (Don't Panic!)
+
+**This is NORMAL and EXPECTED** when working with tag-pinned submodules:
+
+```bash
+# In the upstream submodule, you'll see:
+$ git status
+HEAD detached from v0.0.113-namastex-14  # ← Misleading message!
+nothing to commit, working tree clean
+```
+
+**What this ACTUALLY means:**
+- "detached from X" = You **came from** tag X, not that you're **at** tag X
+- Git's wording is backwards and confusing
+- You're probably at a NEWER tag, not the one shown
+
+**To check where you REALLY are:**
+```bash
+git describe --tags --exact-match    # Shows current tag
+git log --oneline -1                  # Shows current commit
+```
+
+**Why detached HEAD happens:**
+- Submodules pinned to tags are always in detached HEAD state
+- This is Git's way of saying "you're at a specific commit, not a branch"
+- It's safe and correct - don't try to "fix" it
+
+**When to worry:**
+- ❌ If `git describe` shows a different tag than expected
+- ✅ If git status says "detached from" - this is normal, ignore it
