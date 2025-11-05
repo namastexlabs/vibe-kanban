@@ -7,7 +7,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
-import { usePostHog } from 'posthog-js/react';
 import type {
   BaseCodingAgent,
   ExecutorConfig,
@@ -31,21 +30,11 @@ function ExecutorProfileSelector({
   showLabel = true,
   showVariantSelector = true,
 }: Props) {
-  const posthog = usePostHog();
-
   if (!profiles) {
     return null;
   }
 
   const handleExecutorChange = (executor: string) => {
-    // Track executor switching (async, non-blocking)
-    if (selectedProfile && selectedProfile.executor !== executor) {
-      posthog?.capture('executor_switched', {
-        from_executor: selectedProfile.executor,
-        to_executor: executor,
-      });
-    }
-
     onProfileSelect({
       executor: executor as BaseCodingAgent,
       variant: null,
@@ -54,19 +43,9 @@ function ExecutorProfileSelector({
 
   const handleVariantChange = (variant: string) => {
     if (selectedProfile) {
-      // Track variant change (async, non-blocking)
-      const newVariant = variant === 'DEFAULT' ? null : variant;
-      if (selectedProfile.variant !== newVariant) {
-        posthog?.capture('executor_variant_changed', {
-          executor: selectedProfile.executor,
-          from_variant: selectedProfile.variant || 'DEFAULT',
-          to_variant: variant,
-        });
-      }
-
       onProfileSelect({
         ...selectedProfile,
-        variant: newVariant,
+        variant: variant === 'DEFAULT' ? null : variant,
       });
     }
   };
