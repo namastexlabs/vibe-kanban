@@ -127,3 +127,76 @@ Runtime:
 - `FRONTEND_PORT`: Frontend dev port (default: 3000)
 - `HOST`: Backend host (default: 127.0.0.1)
 - `DISABLE_WORKTREE_ORPHAN_CLEANUP`: Debug flag for worktrees
+
+## Release Workflow for Namastex Fork
+
+This is a fork of BloopAI/vibe-kanban maintained by Namastex Labs. We track modifications with incremental releases.
+
+### Creating Release Tags (Footprints)
+
+When you make changes to the fork, create a release tag to leave a footprint for future upstream merges:
+
+```bash
+# 1. Commit your changes (in upstream submodule)
+cd /home/namastex/workspace/automagik-forge/upstream
+git add -A
+git commit -m "fix: your change description"
+git push origin release/v0.0.X-namastex-Y
+
+# 2. Create annotated tag (increment -namastex-N)
+git tag -a v0.0.X-namastex-N -m "Release v0.0.X-namastex-N
+
+- Brief description of changes"
+
+# 3. Push tag to GitHub
+git push origin v0.0.X-namastex-N
+
+# 4. Create GitHub release
+gh release create v0.0.X-namastex-N \
+  --repo namastexlabs/vibe-kanban \
+  --title "v0.0.X-namastex-N" \
+  --notes "## Changes
+
+- Your change description
+
+## Commits
+- commit message (commit-hash)"
+```
+
+### Updating Parent Repo Gitmodule
+
+After creating a release tag, update the parent automagik-forge repo:
+
+```bash
+# 1. Checkout the new tag in submodule (CRITICAL STEP)
+cd /home/namastex/workspace/automagik-forge/upstream
+git checkout v0.0.X-namastex-N
+
+# 2. Navigate to parent and update .gitmodules
+cd /home/namastex/workspace/automagik-forge
+# Edit .gitmodules: branch = v0.0.X-namastex-N
+
+# 3. Commit .gitmodules and submodule pointer together
+git add .gitmodules upstream
+git commit -m "chore: update upstream submodule to v0.0.X-namastex-N"
+
+# 4. Push to remote
+git push origin <your-branch>
+```
+
+### Critical Steps Checklist
+
+- [ ] Commit changes in upstream submodule
+- [ ] Create and push tag to namastexlabs/vibe-kanban
+- [ ] Create GitHub release
+- [ ] **Checkout new tag in submodule** (`git checkout v0.0.X-namastex-N`)
+- [ ] Update .gitmodules in parent repo
+- [ ] Commit both .gitmodules and upstream together
+- [ ] Push parent repo
+
+### Why This Workflow?
+
+- **Footprints**: Each `-namastex-N` increment tracks modifications from upstream rebase
+- **Surgical Reapplication**: When pulling new upstream versions, we can reapply changes surgically
+- **Traceability**: Clear history of what changed and when for easier merging
+- **Gitmodule Pinning**: Parent repo always points to specific tested release tags
