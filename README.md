@@ -11,8 +11,8 @@
 <p align="center">Get 10X more out of Claude Code, Gemini CLI, Codex, Amp and other coding agents...</p>
 <p align="center">
   <a href="https://www.npmjs.com/package/vibe-kanban"><img alt="npm" src="https://img.shields.io/npm/v/vibe-kanban?style=flat-square" /></a>
-  <a href="https://github.com/BloopAI/vibe-kanban/blob/main/.github/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/BloopAI/vibe-kanban/.github%2Fworkflows%2Fpublish.yml" /></a>
-  <a href="https://deepwiki.com/BloopAI/vibe-kanban"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="https://github.com/namastexlabs/vibe-kanban/blob/main/.github/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/namastexlabs/vibe-kanban/.github%2Fworkflows%2Fpublish.yml" /></a>
+  <a href="https://deepwiki.com/namastexlabs/vibe-kanban"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 ![](frontend/public/vibe-kanban-screenshot-overview.png)
@@ -44,11 +44,11 @@ Please head to the [website](https://vibekanban.com/docs) for the latest documen
 
 ## Support
 
-We use [GitHub Discussions](https://github.com/BloopAI/vibe-kanban/discussions) for feature requests. Please open a discussion to create a feature request. For bugs please open an issue on this repo.
+We use [GitHub Discussions](https://github.com/namastexlabs/vibe-kanban/discussions) for feature requests. Please open a discussion to create a feature request. For bugs please open an issue on this repo.
 
 ## Contributing
 
-We would prefer that ideas and changes are first raised with the core team via [GitHub Discussions](https://github.com/BloopAI/vibe-kanban/discussions) or Discord, where we can discuss implementation details and alignment with the existing roadmap. Please do not open PRs without first discussing your proposal with the team.
+We would prefer that ideas and changes are first raised with the core team via [GitHub Discussions](https://github.com/namastexlabs/vibe-kanban/discussions) or Discord, where we can discuss implementation details and alignment with the existing roadmap. Please do not open PRs without first discussing your proposal with the team.
 
 ## Development
 
@@ -111,7 +111,7 @@ The following environment variables can be configured at build time or runtime:
 
 #### Custom GitHub OAuth App (Optional)
 
-By default, Vibe Kanban uses Bloop AI's GitHub OAuth app for authentication. To use your own GitHub app for self-hosting or custom branding:
+By default, Vibe Kanban uses Namastex Labs's GitHub OAuth app for authentication. To use your own GitHub app for self-hosting or custom branding:
 
 1. Create a GitHub OAuth App at [GitHub Developer Settings](https://github.com/settings/developers)
 2. Enable "Device Flow" in the app settings
