@@ -222,6 +222,37 @@ impl TaskAttempt {
         Ok(())
     }
 
+    /// Update token usage metrics for telemetry
+    /// Saves LLM API usage data (input, output, cache tokens) to task_attempts table
+    pub async fn update_token_usage(
+        pool: &SqlitePool,
+        attempt_id: Uuid,
+        input_tokens: Option<i32>,
+        output_tokens: Option<i32>,
+        cache_creation_tokens: Option<i32>,
+        cache_read_tokens: Option<i32>,
+    ) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
+        sqlx::query!(
+            "UPDATE task_attempts
+             SET input_tokens = $1,
+                 output_tokens = $2,
+                 cache_creation_tokens = $3,
+                 cache_read_tokens = $4,
+                 updated_at = $5
+             WHERE id = $6",
+            input_tokens,
+            output_tokens,
+            cache_creation_tokens,
+            cache_read_tokens,
+            now,
+            attempt_id
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
+
     /// Helper function to mark a worktree as deleted in the database
     pub async fn mark_worktree_deleted(
         pool: &SqlitePool,
