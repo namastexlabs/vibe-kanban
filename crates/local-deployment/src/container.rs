@@ -815,12 +815,25 @@ impl ContainerService for LocalContainerService {
         })?;
         let worktree_path = PathBuf::from(container_ref);
 
-        WorktreeManager::ensure_worktree_exists(
-            &project.git_repo_path,
-            &task_attempt.branch,
-            &worktree_path,
+        // Check if this task uses worktrees
+        // Default to true for backward compatibility if row doesn't exist
+        let use_worktree = sqlx::query_scalar::<_, bool>(
+            "SELECT COALESCE((SELECT use_worktree FROM forge_task_attempt_config WHERE task_attempt_id = ?), 1)"
         )
-        .await?;
+        .bind(task_attempt.id)
+        .fetch_one(&self.db.pool)
+        .await
+        .unwrap_or(true); // Default to true if query fails
+
+        // Only ensure worktree exists if actually using worktrees
+        if use_worktree {
+            WorktreeManager::ensure_worktree_exists(
+                &project.git_repo_path,
+                &task_attempt.branch,
+                &worktree_path,
+            )
+            .await?;
+        }
 
         Ok(container_ref.to_string())
     }
