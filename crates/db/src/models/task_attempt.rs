@@ -45,6 +45,10 @@ pub struct TaskAttempt {
     // "GEMINI", etc.)
     pub worktree_deleted: bool, // Flag indicating if worktree has been cleaned up
     pub setup_completed_at: Option<DateTime<Utc>>, // When setup script was last completed
+    pub input_tokens: Option<i32>,     // LLM input tokens used
+    pub output_tokens: Option<i32>,    // LLM output tokens generated
+    pub cache_creation_tokens: Option<i32>, // Prompt cache creation tokens (Claude)
+    pub cache_read_tokens: Option<i32>, // Prompt cache read tokens (Claude)
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -107,6 +111,10 @@ impl TaskAttempt {
                               executor AS "executor!",
                               worktree_deleted AS "worktree_deleted!: bool",
                               setup_completed_at AS "setup_completed_at: DateTime<Utc>",
+                              input_tokens AS "input_tokens: i32",
+                              output_tokens AS "output_tokens: i32",
+                              cache_creation_tokens AS "cache_creation_tokens: i32",
+                              cache_read_tokens AS "cache_read_tokens: i32",
                               created_at AS "created_at!: DateTime<Utc>",
                               updated_at AS "updated_at!: DateTime<Utc>"
                        FROM task_attempts
@@ -127,6 +135,10 @@ impl TaskAttempt {
                               executor AS "executor!",
                               worktree_deleted AS "worktree_deleted!: bool",
                               setup_completed_at AS "setup_completed_at: DateTime<Utc>",
+                              input_tokens AS "input_tokens: i32",
+                              output_tokens AS "output_tokens: i32",
+                              cache_creation_tokens AS "cache_creation_tokens: i32",
+                              cache_read_tokens AS "cache_read_tokens: i32",
                               created_at AS "created_at!: DateTime<Utc>",
                               updated_at AS "updated_at!: DateTime<Utc>"
                        FROM task_attempts
@@ -158,6 +170,10 @@ impl TaskAttempt {
                        ta.executor AS "executor!",
                        ta.worktree_deleted  AS "worktree_deleted!: bool",
                        ta.setup_completed_at AS "setup_completed_at: DateTime<Utc>",
+                       ta.input_tokens AS "input_tokens: i32",
+                       ta.output_tokens AS "output_tokens: i32",
+                       ta.cache_creation_tokens AS "cache_creation_tokens: i32",
+                       ta.cache_read_tokens AS "cache_read_tokens: i32",
                        ta.created_at        AS "created_at!: DateTime<Utc>",
                        ta.updated_at        AS "updated_at!: DateTime<Utc>"
                FROM    task_attempts ta
@@ -231,6 +247,10 @@ impl TaskAttempt {
                        executor AS "executor!",
                        worktree_deleted  AS "worktree_deleted!: bool",
                        setup_completed_at AS "setup_completed_at: DateTime<Utc>",
+                       input_tokens AS "input_tokens: i32",
+                       output_tokens AS "output_tokens: i32",
+                       cache_creation_tokens AS "cache_creation_tokens: i32",
+                       cache_read_tokens AS "cache_read_tokens: i32",
                        created_at        AS "created_at!: DateTime<Utc>",
                        updated_at        AS "updated_at!: DateTime<Utc>"
                FROM    task_attempts
@@ -252,6 +272,10 @@ impl TaskAttempt {
                        executor AS "executor!",
                        worktree_deleted  AS "worktree_deleted!: bool",
                        setup_completed_at AS "setup_completed_at: DateTime<Utc>",
+                       input_tokens AS "input_tokens: i32",
+                       output_tokens AS "output_tokens: i32",
+                       cache_creation_tokens AS "cache_creation_tokens: i32",
+                       cache_read_tokens AS "cache_read_tokens: i32",
                        created_at        AS "created_at!: DateTime<Utc>",
                        updated_at        AS "updated_at!: DateTime<Utc>"
                FROM    task_attempts
@@ -374,7 +398,7 @@ impl TaskAttempt {
             TaskAttempt,
             r#"INSERT INTO task_attempts (id, task_id, container_ref, branch, target_branch, executor, worktree_deleted, setup_completed_at)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-               RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, target_branch, executor as "executor!",  worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
+               RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, target_branch, executor as "executor!",  worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", input_tokens as "input_tokens: i32", output_tokens as "output_tokens: i32", cache_creation_tokens as "cache_creation_tokens: i32", cache_read_tokens as "cache_read_tokens: i32", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
             id,
             task_id,
             Option::<String>::None, // Container isn't known yet
