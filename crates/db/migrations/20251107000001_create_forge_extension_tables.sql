@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS forge_omni_notifications (
     sent_at DATETIME,
     status TEXT DEFAULT 'pending', -- pending, sent, failed
     error_message TEXT,
+    metadata TEXT, -- JSON metadata for notification context
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
