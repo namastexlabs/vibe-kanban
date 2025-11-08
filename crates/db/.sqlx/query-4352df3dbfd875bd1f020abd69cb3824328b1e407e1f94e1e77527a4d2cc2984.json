@@ -1,0 +1,98 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO task_attempts (id, task_id, container_ref, branch, target_branch, executor, worktree_deleted, setup_completed_at)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n               RETURNING id as \"id!: Uuid\", task_id as \"task_id!: Uuid\", container_ref, branch, target_branch, executor as \"executor!\",  worktree_deleted as \"worktree_deleted!: bool\", setup_completed_at as \"setup_completed_at: DateTime<Utc>\", input_tokens as \"input_tokens: i32\", output_tokens as \"output_tokens: i32\", cache_creation_tokens as \"cache_creation_tokens: i32\", cache_read_tokens as \"cache_read_tokens: i32\", created_at as \"created_at!: DateTime<Utc>\", updated_at as \"updated_at!: DateTime<Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "task_id!: Uuid",
+        "ordinal": 1,
+        "type_info": "Blob"
+      },
+      {
+        "name": "container_ref",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "branch",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "target_branch",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "executor!",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "worktree_deleted!: bool",
+        "ordinal": 6,
+        "type_info": "Bool"
+      },
+      {
+        "name": "setup_completed_at: DateTime<Utc>",
+        "ordinal": 7,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "input_tokens: i32",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "output_tokens: i32",
+        "ordinal": 9,
+        "type_info": "Integer"
+      },
+      {
+        "name": "cache_creation_tokens: i32",
+        "ordinal": 10,
+        "type_info": "Integer"
+      },
+      {
+        "name": "cache_read_tokens: i32",
+        "ordinal": 11,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 13,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4352df3dbfd875bd1f020abd69cb3824328b1e407e1f94e1e77527a4d2cc2984"
+}
