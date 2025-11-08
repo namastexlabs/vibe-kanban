@@ -26,6 +26,9 @@ pub enum AutomagikForgeError {
 
 #[tokio::main]
 async fn main() -> Result<(), AutomagikForgeError> {
+    // Load .env file if it exists (for DATABASE_URL and other runtime config)
+    dotenvy::dotenv().ok();
+
     sentry_utils::init_once(SentrySource::Backend);
 
     let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
