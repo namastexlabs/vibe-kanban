@@ -718,6 +718,17 @@ impl ContainerService for LocalContainerService {
         .await
         .unwrap_or(true); // Default to true if query fails
 
+        // Check if this is a Master Genie agent (orchestrator)
+        // Master Genie needs a project-agnostic workspace to avoid inheriting AGENTS.md/CLAUDE.md context
+        let agent_type = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT agent_type FROM forge_agents WHERE task_id = ?"
+        )
+        .bind(task.id)
+        .fetch_optional(&self.db.pool)
+        .await
+        .unwrap_or(None)
+        .flatten();
+
         let container_ref_path = if use_worktree {
             // Create worktree for isolated work
             WorktreeManager::create_worktree(
@@ -750,6 +761,24 @@ impl ContainerService for LocalContainerService {
             }
 
             worktree_path
+        } else if agent_type.as_deref() == Some("master") {
+            // Master Genie: Use dedicated workspace to avoid project context pollution
+            // Create /tmp/genie-workspaces/{project_id}/ directory
+            let genie_workspace = PathBuf::from("/tmp/genie-workspaces")
+                .join(project.id.to_string());
+
+            // Create the directory if it doesn't exist
+            std::fs::create_dir_all(&genie_workspace)
+                .map_err(|e| ContainerError::Other(anyhow::anyhow!(
+                    "Failed to create genie workspace: {}", e
+                )))?;
+
+            tracing::info!(
+                "Master Genie using dedicated workspace: {}",
+                genie_workspace.display()
+            );
+
+            genie_workspace
         } else {
             // No worktree - use project's main repository directly
             PathBuf::from(&project.git_repo_path)
@@ -767,31 +796,63 @@ impl ContainerService for LocalContainerService {
     }
 
     async fn delete_inner(&self, task_attempt: &TaskAttempt) -> Result<(), ContainerError> {
-        // cleanup the container, here that means deleting the worktree
+        // cleanup the container, here that means deleting the worktree or genie workspace
         let task = task_attempt
             .parent_task(&self.db.pool)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
-        let git_repo_path = match Project::find_by_id(&self.db.pool, task.project_id).await {
-            Ok(Some(project)) => Some(project.git_repo_path.clone()),
-            Ok(None) => None,
-            Err(e) => {
-                tracing::error!("Failed to fetch project {}: {}", task.project_id, e);
-                None
-            }
-        };
-        WorktreeManager::cleanup_worktree(
-            &PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default()),
-            git_repo_path.as_deref(),
+
+        let container_ref_path = PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default());
+
+        // Check if this is a Master Genie workspace
+        let agent_type = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT agent_type FROM forge_agents WHERE task_id = ?"
         )
+        .bind(task.id)
+        .fetch_optional(&self.db.pool)
         .await
-        .unwrap_or_else(|e| {
-            tracing::warn!(
-                "Failed to clean up worktree for task attempt {}: {}",
-                task_attempt.id,
-                e
-            );
-        });
+        .unwrap_or(None)
+        .flatten();
+
+        if agent_type.as_deref() == Some("master") && container_ref_path.starts_with("/tmp/genie-workspaces") {
+            // Master Genie workspace - just remove the directory (not a git worktree)
+            if container_ref_path.exists() {
+                std::fs::remove_dir_all(&container_ref_path)
+                    .unwrap_or_else(|e| {
+                        tracing::warn!(
+                            "Failed to clean up genie workspace for task attempt {}: {}",
+                            task_attempt.id,
+                            e
+                        );
+                    });
+                tracing::info!(
+                    "Cleaned up genie workspace: {}",
+                    container_ref_path.display()
+                );
+            }
+        } else {
+            // Regular worktree cleanup
+            let git_repo_path = match Project::find_by_id(&self.db.pool, task.project_id).await {
+                Ok(Some(project)) => Some(project.git_repo_path.clone()),
+                Ok(None) => None,
+                Err(e) => {
+                    tracing::error!("Failed to fetch project {}: {}", task.project_id, e);
+                    None
+                }
+            };
+            WorktreeManager::cleanup_worktree(
+                &container_ref_path,
+                git_repo_path.as_deref(),
+            )
+            .await
+            .unwrap_or_else(|e| {
+                tracing::warn!(
+                    "Failed to clean up worktree for task attempt {}: {}",
+                    task_attempt.id,
+                    e
+                );
+            });
+        }
         Ok(())
     }
 
@@ -813,26 +874,50 @@ impl ContainerService for LocalContainerService {
         let container_ref = task_attempt.container_ref.as_ref().ok_or_else(|| {
             ContainerError::Other(anyhow!("Container ref not found for task attempt"))
         })?;
-        let worktree_path = PathBuf::from(container_ref);
+        let container_ref_path = PathBuf::from(container_ref);
 
-        // Check if this task uses worktrees
-        // Default to true for backward compatibility if row doesn't exist
-        let use_worktree = sqlx::query_scalar::<_, bool>(
-            "SELECT COALESCE((SELECT use_worktree FROM forge_task_attempt_config WHERE task_attempt_id = ?), 1)"
+        // Check if this is a Master Genie workspace
+        let agent_type = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT agent_type FROM forge_agents WHERE task_id = ?"
         )
-        .bind(task_attempt.id)
-        .fetch_one(&self.db.pool)
+        .bind(task.id)
+        .fetch_optional(&self.db.pool)
         .await
-        .unwrap_or(true); // Default to true if query fails
+        .unwrap_or(None)
+        .flatten();
 
-        // Only ensure worktree exists if actually using worktrees
-        if use_worktree {
-            WorktreeManager::ensure_worktree_exists(
-                &project.git_repo_path,
-                &task_attempt.branch,
-                &worktree_path,
+        if agent_type.as_deref() == Some("master") && container_ref_path.starts_with("/tmp/genie-workspaces") {
+            // Master Genie workspace - ensure directory exists
+            if !container_ref_path.exists() {
+                std::fs::create_dir_all(&container_ref_path)
+                    .map_err(|e| ContainerError::Other(anyhow::anyhow!(
+                        "Failed to create genie workspace: {}", e
+                    )))?;
+                tracing::info!(
+                    "Ensured genie workspace exists: {}",
+                    container_ref_path.display()
+                );
+            }
+        } else {
+            // Check if this task uses worktrees
+            // Default to true for backward compatibility if row doesn't exist
+            let use_worktree = sqlx::query_scalar::<_, bool>(
+                "SELECT COALESCE((SELECT use_worktree FROM forge_task_attempt_config WHERE task_attempt_id = ?), 1)"
             )
-            .await?;
+            .bind(task_attempt.id)
+            .fetch_one(&self.db.pool)
+            .await
+            .unwrap_or(true); // Default to true if query fails
+
+            // Only ensure worktree exists if actually using worktrees
+            if use_worktree {
+                WorktreeManager::ensure_worktree_exists(
+                    &project.git_repo_path,
+                    &task_attempt.branch,
+                    &container_ref_path,
+                )
+                .await?;
+            }
         }
 
         Ok(container_ref.to_string())
