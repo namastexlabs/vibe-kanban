@@ -718,17 +718,6 @@ impl ContainerService for LocalContainerService {
         .await
         .unwrap_or(true); // Default to true if query fails
 
-        // Check if this is a Master Genie agent (orchestrator)
-        // Master Genie needs a project-agnostic workspace to avoid inheriting AGENTS.md/CLAUDE.md context
-        let agent_type = sqlx::query_scalar::<_, Option<String>>(
-            "SELECT agent_type FROM forge_agents WHERE task_id = ?"
-        )
-        .bind(task.id)
-        .fetch_optional(&self.db.pool)
-        .await
-        .unwrap_or(None)
-        .flatten();
-
         let container_ref_path = if use_worktree {
             // Create worktree for isolated work
             WorktreeManager::create_worktree(
@@ -761,27 +750,16 @@ impl ContainerService for LocalContainerService {
             }
 
             worktree_path
-        } else if agent_type.as_deref() == Some("master") {
-            // Master Genie: Use dedicated workspace to avoid project context pollution
-            // Create /tmp/genie-workspaces/{project_id}/ directory
-            let genie_workspace = PathBuf::from("/tmp/genie-workspaces")
-                .join(project.id.to_string());
-
-            // Create the directory if it doesn't exist
-            std::fs::create_dir_all(&genie_workspace)
-                .map_err(|e| ContainerError::Other(anyhow::anyhow!(
-                    "Failed to create genie workspace: {}", e
-                )))?;
-
-            tracing::info!(
-                "Master Genie using dedicated workspace: {}",
-                genie_workspace.display()
-            );
-
-            genie_workspace
         } else {
             // No worktree - use project's main repository directly
-            PathBuf::from(&project.git_repo_path)
+            // This includes genie/master agent and any other agent types
+            let main_workspace = PathBuf::from(&project.git_repo_path);
+            tracing::info!(
+                "Task attempt {} using main workspace: {}",
+                task_attempt.id,
+                main_workspace.display()
+            );
+            main_workspace
         };
 
         // Update both container_ref and branch in the database

@@ -159,6 +159,9 @@ impl Task {
 
 FROM tasks t
 WHERE t.project_id = $1
+  AND NOT EXISTS (
+    SELECT 1 FROM forge_agents fa WHERE fa.task_id = t.id
+  )
 ORDER BY t.created_at DESC"#,
             project_id
         )
