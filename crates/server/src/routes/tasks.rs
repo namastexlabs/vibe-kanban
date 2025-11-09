@@ -208,7 +208,8 @@ pub async fn create_task_and_start(
         has_in_progress_attempt: is_attempt_running,
         has_merged_attempt: false,
         last_attempt_failed: false,
-        executor: task_attempt.executor,
+        executor: task_attempt.executor.clone(),
+        latest_attempt_id: Some(task_attempt.id),
     })))
 }
 

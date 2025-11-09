@@ -42,6 +42,7 @@ pub struct TaskWithAttemptStatus {
     pub has_merged_attempt: bool,
     pub last_attempt_failed: bool,
     pub executor: String,
+    pub latest_attempt_id: Option<Uuid>,
 }
 
 impl std::ops::Deref for TaskWithAttemptStatus {
@@ -155,7 +156,14 @@ impl Task {
       WHERE ta.task_id = t.id
      ORDER BY ta.created_at DESC
       LIMIT 1
-    )                               AS "executor!: String"
+    )                               AS "executor!: String",
+
+  ( SELECT ta.id
+      FROM task_attempts ta
+      WHERE ta.task_id = t.id
+     ORDER BY ta.created_at DESC
+      LIMIT 1
+    )                               AS "latest_attempt_id: Uuid"
 
 FROM tasks t
 WHERE t.project_id = $1
@@ -183,6 +191,7 @@ ORDER BY t.created_at DESC"#,
                 has_merged_attempt: false, // TODO use merges table
                 last_attempt_failed: rec.last_attempt_failed != 0,
                 executor: rec.executor,
+                latest_attempt_id: rec.latest_attempt_id,
             })
             .collect();
 
