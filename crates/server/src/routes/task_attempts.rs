@@ -134,6 +134,11 @@ pub struct CreateTaskAttemptBody {
     /// Executor profile specification
     pub executor_profile_id: ExecutorProfileId,
     pub base_branch: String,
+    /// Whether to use worktree for this attempt (default: true)
+    /// Set to false for Genie Lamp context (main workspace execution)
+    #[serde(default)]
+    #[ts(optional)]
+    pub use_worktree: Option<bool>,
 }
 
 impl CreateTaskAttemptBody {
@@ -177,6 +182,16 @@ pub async fn create_task_attempt(
         attempt_id,
         payload.task_id,
     )
+    .await?;
+
+    // Insert worktree configuration (default to true if not specified)
+    let use_worktree = payload.use_worktree.unwrap_or(true);
+    sqlx::query(
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+    )
+    .bind(task_attempt.id.to_string())
+    .bind(use_worktree)
+    .execute(&deployment.db().pool)
     .await?;
 
     if let Err(err) = deployment
