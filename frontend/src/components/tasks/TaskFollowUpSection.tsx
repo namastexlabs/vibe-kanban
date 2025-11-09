@@ -134,18 +134,18 @@ export function TaskFollowUpSection({
   // Cycle to the next variant when Shift+Tab is pressed
   const cycleVariant = useCallback(() => {
     if (!currentProfile) return;
-    const variants = Object.keys(currentProfile); // Include DEFAULT
+    const variants = Object.keys(currentProfile); // Include GENIE
     if (variants.length === 0) return;
 
-    // Treat null as "DEFAULT" for finding current position
-    const currentVariantForLookup = selectedVariant ?? 'DEFAULT';
+    // Treat null as "GENIE" for finding current position
+    const currentVariantForLookup = selectedVariant ?? 'GENIE';
     const currentIndex = variants.indexOf(currentVariantForLookup);
     const nextIndex = (currentIndex + 1) % variants.length;
     const nextVariant = variants[nextIndex];
 
-    // Keep using null to represent DEFAULT (backend expects it)
-    // But for display/cycling purposes, treat DEFAULT as a real option
-    setSelectedVariant(nextVariant === 'DEFAULT' ? null : nextVariant);
+    // Keep using null to represent GENIE (backend expects it)
+    // But for display/cycling purposes, treat GENIE as a real option
+    setSelectedVariant(nextVariant === 'GENIE' ? null : nextVariant);
   }, [currentProfile, selectedVariant, setSelectedVariant]);
 
   // Queue management (including derived lock flag)

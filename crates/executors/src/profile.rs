@@ -9,12 +9,12 @@ use ts_rs::TS;
 use crate::executors::{BaseCodingAgent, CodingAgent, StandardCodingAgentExecutor};
 
 /// Return the canonical form for variant keys.
-/// – "DEFAULT" is kept as-is  
+/// – "GENIE" is kept as-is
 /// – everything else is converted to SCREAMING_SNAKE_CASE
 pub fn canonical_variant_key<S: AsRef<str>>(raw: S) -> String {
     let key = raw.as_ref();
-    if key.eq_ignore_ascii_case("DEFAULT") {
-        "DEFAULT".to_string()
+    if key.eq_ignore_ascii_case("GENIE") {
+        "GENIE".to_string()
     } else {
         // Convert to SCREAMING_SNAKE_CASE by first going to snake_case then uppercase
         key.to_case(Case::Snake).to_case(Case::ScreamingSnake)
@@ -126,13 +126,13 @@ impl ExecutorConfig {
 
     /// Get the default configuration for this executor
     pub fn get_default(&self) -> Option<&CodingAgent> {
-        self.configurations.get("DEFAULT")
+        self.configurations.get("GENIE")
     }
 
     /// Create a new executor profile with just a default configuration
     pub fn new_with_default(default_config: CodingAgent) -> Self {
         let mut configurations = HashMap::new();
-        configurations.insert("DEFAULT".to_string(), default_config);
+        configurations.insert("GENIE".to_string(), default_config);
         Self { configurations }
     }
 
@@ -143,9 +143,9 @@ impl ExecutorConfig {
         config: CodingAgent,
     ) -> Result<(), &'static str> {
         let key = canonical_variant_key(&variant_name);
-        if key == "DEFAULT" {
+        if key == "GENIE" {
             return Err(
-                "Cannot override 'DEFAULT' variant using set_variant, use set_default instead",
+                "Cannot override 'GENIE' variant using set_variant, use set_default instead",
             );
         }
         self.configurations.insert(key, config);
@@ -154,14 +154,14 @@ impl ExecutorConfig {
 
     /// Set the default configuration
     pub fn set_default(&mut self, config: CodingAgent) {
-        self.configurations.insert("DEFAULT".to_string(), config);
+        self.configurations.insert("GENIE".to_string(), config);
     }
 
-    /// Get all variant names (excluding "DEFAULT")
+    /// Get all variant names (excluding "GENIE")
     pub fn variant_names(&self) -> Vec<&String> {
         self.configurations
             .keys()
-            .filter(|k| *k != "DEFAULT")
+            .filter(|k| *k != "GENIE")
             .collect()
     }
 }
@@ -327,9 +327,9 @@ impl ExecutorConfigs {
     fn validate_merged(merged: &Self) -> Result<(), ProfileError> {
         for (executor_key, profile) in &merged.executors {
             // Ensure default configuration exists
-            let default_config = profile.configurations.get("DEFAULT").ok_or_else(|| {
+            let default_config = profile.configurations.get("GENIE").ok_or_else(|| {
                 ProfileError::Validation(format!(
-                    "Executor '{executor_key}' is missing required 'default' configuration"
+                    "Executor '{executor_key}' is missing required 'genie' configuration"
                 ))
             })?;
 
@@ -368,7 +368,7 @@ impl ExecutorConfigs {
                     &executor_profile_id
                         .variant
                         .clone()
-                        .unwrap_or("DEFAULT".to_string()),
+                        .unwrap_or("GENIE".to_string()),
                 )
             })
             .cloned()
@@ -381,9 +381,9 @@ impl ExecutorConfigs {
         self.get_coding_agent(executor_profile_id)
             .unwrap_or_else(|| {
                 let mut default_executor_profile_id = executor_profile_id.clone();
-                default_executor_profile_id.variant = Some("DEFAULT".to_string());
+                default_executor_profile_id.variant = Some("GENIE".to_string());
                 self.get_coding_agent(&default_executor_profile_id)
-                    .expect("No default variant found")
+                    .expect("No genie variant found")
             })
     }
     /// Get the first available executor profile for new users
