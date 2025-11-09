@@ -150,7 +150,7 @@ impl Default for NotificationConfig {
         Self {
             sound_enabled: true,
             push_enabled: true,
-            sound_file: SoundFile::CowMooing,
+            sound_file: SoundFile::GenieNotify1,
         }
     }
 }
@@ -185,9 +185,9 @@ pub enum SoundFile {
     AbstractSound2,
     AbstractSound3,
     AbstractSound4,
-    CowMooing,
+    GenieNotify1,
+    GenieNotify2,
     PhoneVibration,
-    Rooster,
 }
 
 impl SoundFile {
@@ -197,9 +197,9 @@ impl SoundFile {
             SoundFile::AbstractSound2 => "abstract-sound2.wav",
             SoundFile::AbstractSound3 => "abstract-sound3.wav",
             SoundFile::AbstractSound4 => "abstract-sound4.wav",
-            SoundFile::CowMooing => "cow-mooing.wav",
+            SoundFile::GenieNotify1 => "genie-notify-1.wav",
+            SoundFile::GenieNotify2 => "genie-notify-2.wav",
             SoundFile::PhoneVibration => "phone-vibration.wav",
-            SoundFile::Rooster => "rooster.wav",
         }
     }
 
@@ -262,9 +262,9 @@ impl From<v1::SoundFile> for SoundFile {
             v1::SoundFile::AbstractSound2 => SoundFile::AbstractSound2,
             v1::SoundFile::AbstractSound3 => SoundFile::AbstractSound3,
             v1::SoundFile::AbstractSound4 => SoundFile::AbstractSound4,
-            v1::SoundFile::CowMooing => SoundFile::CowMooing,
+            v1::SoundFile::GenieNotify1 => SoundFile::GenieNotify1,
+            v1::SoundFile::GenieNotify2 => SoundFile::GenieNotify2,
             v1::SoundFile::PhoneVibration => SoundFile::PhoneVibration,
-            v1::SoundFile::Rooster => SoundFile::Rooster,
         }
     }
 }
