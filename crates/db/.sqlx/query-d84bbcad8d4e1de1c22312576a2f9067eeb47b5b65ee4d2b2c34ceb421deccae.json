@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE task_attempts\n             SET input_tokens = $1,\n                 output_tokens = $2,\n                 cache_creation_tokens = $3,\n                 cache_read_tokens = $4,\n                 updated_at = $5\n             WHERE id = $6",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "d84bbcad8d4e1de1c22312576a2f9067eeb47b5b65ee4d2b2c34ceb421deccae"
+}

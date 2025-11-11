@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{path::PathBuf, str::FromStr, sync::Arc};
 
 use sqlx::{
     Error, Pool, Sqlite, SqlitePool,
@@ -14,11 +14,36 @@ pub struct DBService {
 }
 
 impl DBService {
+    /// Get the database URL from environment variable or default to asset_dir
+    fn get_database_url() -> String {
+        if let Ok(db_url) = std::env::var("DATABASE_URL") {
+            // If DATABASE_URL is set, use it
+            // Handle both absolute paths and relative paths
+            if db_url.starts_with("sqlite://") {
+                let path_part = db_url.strip_prefix("sqlite://").unwrap();
+                if PathBuf::from(path_part).is_absolute() {
+                    db_url
+                } else {
+                    // Relative path - resolve from current working directory
+                    let abs_path = std::env::current_dir()
+                        .unwrap_or_else(|_| PathBuf::from("."))
+                        .join(path_part);
+                    format!("sqlite://{}", abs_path.to_string_lossy())
+                }
+            } else {
+                db_url
+            }
+        } else {
+            // Default to asset_dir/db.sqlite
+            format!(
+                "sqlite://{}",
+                asset_dir().join("db.sqlite").to_string_lossy()
+            )
+        }
+    }
+
     pub async fn new() -> Result<DBService, Error> {
-        let database_url = format!(
-            "sqlite://{}",
-            asset_dir().join("db.sqlite").to_string_lossy()
-        );
+        let database_url = Self::get_database_url();
         let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(true);
         let pool = SqlitePool::connect_with(options).await?;
         sqlx::migrate!("./migrations").run(&pool).await?;
@@ -49,10 +74,7 @@ impl DBService {
             + Sync
             + 'static,
     {
-        let database_url = format!(
-            "sqlite://{}",
-            asset_dir().join("db.sqlite").to_string_lossy()
-        );
+        let database_url = Self::get_database_url();
         let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(true);
 
         let pool = if let Some(hook) = after_connect {
