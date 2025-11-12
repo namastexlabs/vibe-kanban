@@ -17,7 +17,7 @@ CREATE TABLE tasks_new (
     title       TEXT NOT NULL,
     description TEXT,
     status      TEXT NOT NULL DEFAULT 'todo'
-                   CHECK (status IN ('todo','inprogress','done','cancelled','inreview','agent')),
+                   CHECK (status IN ('todo','inprogress','done','cancelled','inreview','agent','archived')),
     parent_task_attempt BLOB,
     created_at  TEXT NOT NULL DEFAULT (datetime('now', 'subsec')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now', 'subsec')),
