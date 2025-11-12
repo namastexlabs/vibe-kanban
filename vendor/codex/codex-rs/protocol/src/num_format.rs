@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::cell::RefCell;
 
 use icu_decimal::DecimalFormatter;
 use icu_decimal::input::Decimal;
@@ -17,17 +17,25 @@ fn make_en_us_formatter() -> DecimalFormatter {
         .expect("en-US wasn't a valid locale")
 }
 
-fn formatter() -> &'static DecimalFormatter {
-    static FORMATTER: LazyLock<DecimalFormatter> = LazyLock::new(|| {
-        make_local_formatter().unwrap_or_else(make_en_us_formatter)
-    });
-    &FORMATTER
+thread_local! {
+    static FORMATTER: RefCell<Option<DecimalFormatter>> = RefCell::new(None);
+}
+
+fn formatter() -> DecimalFormatter {
+    FORMATTER.with(|f| {
+        let mut formatter = f.borrow_mut();
+        if formatter.is_none() {
+            *formatter = Some(make_local_formatter().unwrap_or_else(make_en_us_formatter));
+        }
+        formatter.clone().unwrap()
+    })
 }
 
 /// Format a u64 with locale-aware digit separators (e.g. "12345" -> "12,345"
 /// for en-US).
 pub fn format_with_separators(n: u64) -> String {
-    formatter().format(&Decimal::from(n)).to_string()
+    let fmt = formatter();
+    fmt.format(&Decimal::from(n)).to_string()
 }
 
 fn format_si_suffix_with_formatter(n: u64, formatter: &DecimalFormatter) -> String {
@@ -70,7 +78,8 @@ fn format_si_suffix_with_formatter(n: u64, formatter: &DecimalFormatter) -> Stri
 ///   - 1200 -> "1.20K"
 ///   - 123456789 -> "123M"
 pub fn format_si_suffix(n: u64) -> String {
-    format_si_suffix_with_formatter(n, formatter())
+    let fmt = formatter();
+    format_si_suffix_with_formatter(n, &fmt)
 }
 
 #[cfg(test)]
