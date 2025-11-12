@@ -1,10 +1,6 @@
 <p align="center">
   <a href="https://vibekanban.com">
-    <picture>
-      <source srcset="frontend/public/automagik-forge-logo-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="frontend/public/automagik-forge-logo.svg" media="(prefers-color-scheme: light)">
-      <img src="frontend/public/automagik-forge-logo.svg" alt="Automagik Forge Logo">
-    </picture>
+    <h1>Automagik Forge Backend</h1>
   </a>
 </p>
 
@@ -15,7 +11,7 @@
   <a href="https://deepwiki.com/namastexlabs/automagik-forge"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
-![](frontend/public/automagik-forge-screenshot-overview.png)
+> **Note**: This is the backend repository. The frontend is maintained in the [automagik-forge](https://github.com/namastexlabs/automagik-forge) parent repository.
 
 ## Overview
 
@@ -76,15 +72,6 @@ pnpm run dev
 ```
 
 This will start the backend. A blank DB will be copied from the `dev_assets_seed` folder.
-
-### Building the frontend
-
-To build just the frontend:
-
-```bash
-cd frontend
-pnpm build
-```
 
 ### Build from source
 

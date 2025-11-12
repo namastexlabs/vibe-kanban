@@ -6,28 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 ```bash
-# Start development servers with hot reload (frontend + backend)
-pnpm run dev
+# Start backend development server
+npm run dev
 
-# Individual dev servers
-npm run frontend:dev    # Frontend only (port 3000)
-npm run backend:dev     # Backend only (port auto-assigned)
+# Backend only
+npm run backend:dev                  # Backend server (port auto-assigned)
 
 # Build production version
-./build-npm-package.sh
+./local-build.sh
 ```
 
 ### Testing & Validation
 ```bash
-# Run all checks (frontend + backend)
+# Run all backend checks
 npm run check
 
-# Frontend specific
-cd frontend && npm run lint          # Lint TypeScript/React code
-cd frontend && npm run format:check  # Check formatting
-cd frontend && npx tsc --noEmit     # TypeScript type checking
-
-# Backend specific  
+# Backend tests & validation
 cargo test --workspace               # Run all Rust tests
 cargo test -p <crate_name>          # Test specific crate
 cargo test test_name                # Run specific test
@@ -52,10 +46,10 @@ sqlx database create                 # Create database
 
 ### Tech Stack
 - **Backend**: Rust with Axum web framework, Tokio async runtime, SQLx for database
-- **Frontend**: React 18 + TypeScript + Vite, Tailwind CSS, shadcn/ui components  
 - **Database**: SQLite with SQLx migrations
 - **Type Sharing**: ts-rs generates TypeScript types from Rust structs
 - **MCP Server**: Built-in Model Context Protocol server for AI agent integration
+- **Note**: Frontend is maintained separately in the automagik-forge parent repository
 
 ### Project Structure
 ```
@@ -66,16 +60,9 @@ crates/
 ├── services/      # Business logic, GitHub, auth, git operations
 ├── local-deployment/  # Local deployment logic
 └── utils/         # Shared utilities
-
-frontend/          # React application
-├── src/
-│   ├── components/  # React components (TaskCard, ProjectCard, etc.)
-│   ├── pages/      # Route pages
-│   ├── hooks/      # Custom React hooks (useEventSourceManager, etc.)
-│   └── lib/        # API client, utilities
-
-shared/types.ts    # Auto-generated TypeScript types from Rust
 ```
+
+This is a **backend-only repository**. The frontend is maintained in the parent automagik-forge repository.
 
 ### Key Architectural Patterns
 
@@ -98,22 +85,20 @@ shared/types.ts    # Auto-generated TypeScript types from Rust
 ### API Patterns
 
 - REST endpoints under `/api/*`
-- Frontend dev server proxies to backend (configured in vite.config.ts)
 - Authentication via GitHub OAuth (device flow)
 - All database queries in `crates/db/src/models/`
+- Consumed by frontend in parent automagik-forge repository
 
 ### Development Workflow
 
-1. **Backend changes first**: When modifying both frontend and backend, start with backend
-2. **Type generation**: Run `npm run generate-types` after modifying Rust types
-3. **Database migrations**: Create in `crates/db/migrations/`, apply with `sqlx migrate run`
-4. **Component patterns**: Follow existing patterns in `frontend/src/components/`
+1. **Type generation**: Run `npm run generate-types` after modifying Rust types
+2. **Database migrations**: Create in `crates/db/migrations/`, apply with `sqlx migrate run`
+3. **Backend API changes**: All API endpoints in `crates/server/src/routes/`
 
 ### Testing Strategy
 
 - **Unit tests**: Colocated with code in each crate
-- **Integration tests**: In `tests/` directory of relevant crates  
-- **Frontend tests**: TypeScript compilation and linting only
+- **Integration tests**: In `tests/` directory of relevant crates
 - **CI/CD**: GitHub Actions workflow in `.github/workflows/test.yml`
 
 ### Environment Variables
@@ -124,7 +109,6 @@ Build-time (set when building):
 
 Runtime:
 - `BACKEND_PORT`: Backend server port (default: auto-assign)
-- `FRONTEND_PORT`: Frontend dev port (default: 3000)
 - `HOST`: Backend host (default: 127.0.0.1)
 - `DISABLE_WORKTREE_ORPHAN_CLEANUP`: Debug flag for worktrees
 

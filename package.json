@@ -10,14 +10,11 @@
     "npx-cli/dist/**"
   ],
   "scripts": {
-    "lint": "npm run frontend:lint && npm run backend:lint",
-    "format": "cargo fmt --all && cd frontend && npm run format",
-    "check": "npm run frontend:check && npm run backend:check",
-    "dev": "export FORGE_INSTALLATION_MODE=development && export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"npm run backend:dev:watch\" \"npm run frontend:dev\"",
+    "lint": "npm run backend:lint",
+    "format": "cargo fmt --all",
+    "check": "npm run backend:check",
+    "dev": "export FORGE_INSTALLATION_MODE=development && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && npm run backend:dev",
     "test:npm": "./test-npm-package.sh",
-    "frontend:lint": "cd frontend && npm run lint",
-    "frontend:dev": "cd frontend && npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
-    "frontend:check": "cd frontend && npm run check",
     "backend:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
     "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) npm run backend:dev:watch",
     "backend:check": "cargo check",
@@ -28,10 +25,7 @@
     "build:npx": "bash ./local-build.sh",
     "prepack": "npm run build:npx"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "vite": "^6.3.5"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=18",
     "pnpm": ">=8"
