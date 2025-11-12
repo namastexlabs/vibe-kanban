@@ -1,50 +1,8 @@
-<p align="center">
-  <a href="https://vibekanban.com">
-    <h1>Automagik Forge Backend</h1>
-  </a>
-</p>
+# Forge Core
 
-<p align="center">Get 10X more out of Claude Code, Gemini CLI, Codex, Amp and other coding agents...</p>
-<p align="center">
-  <a href="https://www.npmjs.com/package/automagik-forge"><img alt="npm" src="https://img.shields.io/npm/v/automagik-forge?style=flat-square" /></a>
-  <a href="https://github.com/namastexlabs/automagik-forge/blob/main/.github/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/namastexlabs/automagik-forge/.github%2Fworkflows%2Fpublish.yml" /></a>
-  <a href="https://deepwiki.com/namastexlabs/automagik-forge"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
-</p>
+Backend service for Automagik Forge. This is a Rust-based API server that manages task orchestration, execution, and management for AI coding agents.
 
 > **Note**: This is the backend repository. The frontend is maintained in the [automagik-forge](https://github.com/namastexlabs/automagik-forge) parent repository.
-
-## Overview
-
-AI coding agents are increasingly writing the world's code and human engineers now spend the majority of their time planning, reviewing, and orchestrating tasks. Automagik Forge streamlines this process, enabling you to:
-
-- Easily switch between different coding agents
-- Orchestrate the execution of multiple coding agents in parallel or in sequence
-- Quickly review work and start dev servers
-- Track the status of tasks that your coding agents are working on
-- Centralise configuration of coding agent MCP configs
-- Open projects remotely via SSH when running Automagik Forge on a remote server
-
-You can watch a video overview [here](https://youtu.be/TFT3KnZOOAk).
-
-## Installation
-
-Make sure you have authenticated with your favourite coding agent. A full list of supported coding agents can be found in the [docs](https://vibekanban.com/docs). Then in your terminal run:
-
-```bash
-npx automagik-forge
-```
-
-## Documentation
-
-Please head to the [website](https://vibekanban.com/docs) for the latest documentation and user guides.
-
-## Support
-
-We use [GitHub Discussions](https://github.com/namastexlabs/automagik-forge/discussions) for feature requests. Please open a discussion to create a feature request. For bugs please open an issue on this repo.
-
-## Contributing
-
-We would prefer that ideas and changes are first raised with the core team via [GitHub Discussions](https://github.com/namastexlabs/automagik-forge/discussions) or Discord, where we can discuss implementation details and alignment with the existing roadmap. Please do not open PRs without first discussing your proposal with the team.
 
 ## Development
 
@@ -82,45 +40,8 @@ This will start the backend. A blank DB will be copied from the `dev_assets_seed
 
 ### Environment Variables
 
-The following environment variables can be configured at build time or runtime:
+- `GITHUB_CLIENT_ID`: GitHub OAuth app client ID (optional, uses default)
+- `BACKEND_PORT`: Server port (default: auto-assign)
+- `HOST`: Server host (default: 127.0.0.1)
 
-| Variable | Type | Default | Description |
-|----------|------|---------|-------------|
-| `GITHUB_CLIENT_ID` | Build-time | `Ov23li9bxz3kKfPOIsGm` | GitHub OAuth app client ID for authentication |
-| `POSTHOG_API_KEY` | Build-time | Empty | PostHog analytics API key (disables analytics if empty) |
-| `POSTHOG_API_ENDPOINT` | Build-time | Empty | PostHog analytics endpoint (disables analytics if empty) |
-| `BACKEND_PORT` | Runtime | `0` (auto-assign) | Backend server port |
-| `FRONTEND_PORT` | Runtime | `3000` | Frontend development server port |
-| `HOST` | Runtime | `127.0.0.1` | Backend server host |
-| `DISABLE_WORKTREE_ORPHAN_CLEANUP` | Runtime | Not set | Disable git worktree cleanup (for debugging) |
-
-**Build-time variables** must be set when running `pnpm run build`. **Runtime variables** are read when the application starts.
-
-#### Custom GitHub OAuth App (Optional)
-
-By default, Automagik Forge uses Namastex Labs's GitHub OAuth app for authentication. To use your own GitHub app for self-hosting or custom branding:
-
-1. Create a GitHub OAuth App at [GitHub Developer Settings](https://github.com/settings/developers)
-2. Enable "Device Flow" in the app settings
-3. Set scopes to include `user:email,repo`
-4. Build with your client ID:
-   ```bash
-   GITHUB_CLIENT_ID=your_client_id_here pnpm run build
-   ```
-
-### Remote Deployment
-
-When running Automagik Forge on a remote server (e.g., via systemctl, Docker, or cloud hosting), you can configure your editor to open projects via SSH:
-
-1. **Access via tunnel**: Use Cloudflare Tunnel, ngrok, or similar to expose the web UI
-2. **Configure remote SSH** in Settings → Editor Integration:
-   - Set **Remote SSH Host** to your server hostname or IP
-   - Set **Remote SSH User** to your SSH username (optional)
-3. **Prerequisites**:
-   - SSH access from your local machine to the remote server
-   - SSH keys configured (passwordless authentication)
-   - VSCode Remote-SSH extension
-
-When configured, the "Open in VSCode" buttons will generate URLs like `vscode://vscode-remote/ssh-remote+user@host/path` that open your local editor and connect to the remote server.
-
-See the [documentation](https://vibekanban.com/docs/configuration-customisation/global-settings#remote-ssh-configuration) for detailed setup instructions.
+See `CLAUDE.md` for more details.
