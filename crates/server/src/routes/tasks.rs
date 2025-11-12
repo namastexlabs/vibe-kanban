@@ -14,7 +14,7 @@ use axum::{
 };
 use db::models::{
     image::TaskImage,
-    task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
+    task::{CreateTask, Task, TaskStatus, TaskWithAttemptStatus, UpdateTask},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
@@ -245,6 +245,12 @@ pub async fn update_task(
         TaskImage::associate_many_dedup(&deployment.db().pool, task.id, image_ids).await?;
     }
 
+    // Handle archive status transition
+    if status == TaskStatus::Archived && existing_task.status != TaskStatus::Archived {
+        // Task is being archived for the first time - spawn background cleanup
+        handle_task_archive(&deployment, existing_task.id);
+    }
+
     Ok(ResponseJson(ApiResponse::success(task)))
 }
 
@@ -354,6 +360,90 @@ pub async fn delete_task(
 
     // Return 202 Accepted to indicate deletion was scheduled
     Ok((StatusCode::ACCEPTED, ResponseJson(ApiResponse::success(()))))
+}
+
+/// Handle worktree cleanup when task is archived
+fn handle_task_archive(deployment: &DeploymentImpl, task_id: Uuid) {
+    let deployment = deployment.clone();
+    tokio::spawn(async move {
+        let span = tracing::info_span!("archive_task_worktree_cleanup", task_id = %task_id);
+        let _enter = span.enter();
+
+        // Fetch task
+        let task = match Task::find_by_id(&deployment.db().pool, task_id).await {
+            Ok(Some(t)) => t,
+            _ => {
+                tracing::error!("Failed to find task {} for archive cleanup", task_id);
+                return;
+            }
+        };
+
+        // Fetch all attempts
+        let attempts = match TaskAttempt::fetch_all(&deployment.db().pool, Some(task_id)).await {
+            Ok(a) => a,
+            Err(e) => {
+                tracing::error!("Failed to fetch attempts for task {}: {}", task_id, e);
+                return;
+            }
+        };
+
+        // Fetch project for git repo path
+        let project = match task.parent_project(&deployment.db().pool).await {
+            Ok(Some(p)) => p,
+            _ => {
+                tracing::error!("Failed to find project for task {}", task_id);
+                return;
+            }
+        };
+
+        // Build cleanup data from attempts
+        let cleanup_data: Vec<WorktreeCleanupData> = attempts
+            .iter()
+            .filter_map(|attempt| {
+                attempt
+                    .container_ref
+                    .as_ref()
+                    .map(|worktree_path| WorktreeCleanupData {
+                        attempt_id: attempt.id,
+                        worktree_path: PathBuf::from(worktree_path),
+                        git_repo_path: Some(project.git_repo_path.clone()),
+                    })
+            })
+            .collect();
+
+        if cleanup_data.is_empty() {
+            tracing::debug!("No worktrees to cleanup for archived task {}", task_id);
+            return;
+        }
+
+        tracing::info!(
+            "Starting worktree cleanup for archived task {} ({} worktrees)",
+            task_id,
+            cleanup_data.len()
+        );
+
+        // Perform cleanup
+        match cleanup_worktrees_direct(&cleanup_data).await {
+            Ok(_) => {
+                // Mark worktrees as deleted in database
+                for attempt in &attempts {
+                    if let Err(e) = sqlx::query(
+                        "UPDATE task_attempts SET worktree_deleted = TRUE, updated_at = datetime('now') WHERE id = ?"
+                    )
+                    .bind(attempt.id)
+                    .execute(&deployment.db().pool)
+                    .await
+                    {
+                        tracing::error!("Failed to mark worktree_deleted for attempt {}: {}", attempt.id, e);
+                    }
+                }
+                tracing::info!("Completed worktree cleanup for archived task {}", task_id);
+            }
+            Err(e) => {
+                tracing::error!("Failed to cleanup worktrees for archived task {}: {}", task_id, e);
+            }
+        }
+    });
 }
 
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {

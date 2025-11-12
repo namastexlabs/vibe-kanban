@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use super::{project::Project, task_attempt::TaskAttempt};
 
-#[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS, EnumString, Display)]
+#[derive(Debug, Clone, Copy, Type, Serialize, Deserialize, PartialEq, TS, EnumString, Display)]
 #[sqlx(type_name = "task_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "kebab_case")]
@@ -18,6 +18,7 @@ pub enum TaskStatus {
     Done,
     Cancelled,
     Agent,
+    Archived,
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
