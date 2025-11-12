@@ -4,6 +4,20 @@ Backend service for Automagik Forge. This is a Rust-based API server that manage
 
 > **Note**: This is the backend repository. The frontend is maintained in the [automagik-forge](https://github.com/namastexlabs/automagik-forge) parent repository.
 
+> **Fork Notice**: This repository is forked from [BloopAI/vibe-kanban](https://github.com/BloopAI/vibe-kanban). After cloning, run `./setup.sh` to configure the correct default repository.
+
+## Quick Start
+
+After cloning, run the setup script:
+```bash
+./setup.sh
+```
+
+This will:
+- Set the correct default repository for `gh` CLI
+- Install dependencies with `pnpm`
+- Install required Rust tools (`cargo-watch`, `sqlx-cli`)
+
 ## Development
 
 ### Prerequisites
@@ -11,15 +25,15 @@ Backend service for Automagik Forge. This is a Rust-based API server that manage
 - [Rust](https://rustup.rs/) (latest stable)
 - [Node.js](https://nodejs.org/) (>=18)
 - [pnpm](https://pnpm.io/) (>=8)
+- [GitHub CLI](https://cli.github.com/) (optional, recommended)
 
-Additional development tools:
+Or install manually:
 ```bash
+# Rust development tools
 cargo install cargo-watch
 cargo install sqlx-cli
-```
 
-Install dependencies:
-```bash
+# Node dependencies
 pnpm i
 ```
 
