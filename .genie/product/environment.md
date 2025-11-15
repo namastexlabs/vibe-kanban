@@ -27,36 +27,37 @@
 | `FORGE_INSTALLATION_MODE` | optional | `development` or `production`. `pnpm run dev` exports `development` automatically. |
 | `PORT` | optional | When running the combined Automagik Forge desktop app; forcing it here cascades into frontend/backend offsets. |
 | `RUST_LOG` | optional | Defaults to `debug` in watch mode; set to `info` in production to reduce noise. |
+| `DISABLE_WORKTREE_ORPHAN_CLEANUP` | optional | `1` (disable) or `0`/unset (enable). Use during development to preserve worktrees for debugging. |
 
 Store sensitive values in `.env` files; `.gitignore` already prevents them from being committed.
 
 ## Setup Workflow
-1. **Clone repo & run setup**  
+1. **Clone repo & run setup**
    ```bash
    git clone git@github.com:namastexlabs/forge-core.git
    cd forge-core
    ./setup.sh
    ```
 
-2. **Start dev server**  
+2. **Start dev server**
    ```bash
    pnpm run dev
    # prints allocated frontend/backend ports and copies dev assets
    ```
 
-3. **Prepare SQLx data after editing migrations**  
+3. **Prepare SQLx data after editing migrations**
    ```bash
    npm run prepare-db
    git add crates/db/sqlx-data.json
    ```
 
-4. **Regenerate shared types when backend structs change**  
+4. **Regenerate shared types when backend structs change**
    ```bash
    npm run generate-types
    cp shared/types.ts ../automagik-forge/shared/types.ts  # when syncing with sibling repo
    ```
 
-5. **Package binaries for Automagik Forge**  
+5. **Package binaries for Automagik Forge**
    ```bash
    pnpm run build:npx
    (cd npx-cli && npm pack)
@@ -68,10 +69,129 @@ Store sensitive values in `.env` files; `.gitignore` already prevents them from 
 - The script also copies `dev_assets_seed/*` into `dev_assets/`, ensuring everyone shares the same seed DB + workspace assets.
 - Worktrees live under the per-platform temp directory (see `crates/utils/src/path.rs` for the exact paths on macOS/Linux/Windows).
 
-## Troubleshooting
-- **Port already in use:** delete `.dev-ports.json` and rerun `pnpm run dev`, or export `BACKEND_PORT` manually before running commands.
-- **SQLx compile errors:** rerun `npm run prepare-db` to refresh `sqlx-data.json` after touching migrations or schema definitions.
-- **CLI build mismatch:** ensure `pnpm run build:npx` finished successfully, then verify `npx-cli/dist/automagik-forge*.zip` timestamps before running `npm pack`.
-- **Shared types drift:** compare `md5sum shared/types.ts ../automagik-forge/shared/types.ts`. If they differ, regenerate types in Forge Core and copy into the sibling repo as part of the release plan.
+### Port File Structure
+```json
+{
+  "backend": 3000,
+  "mcp": 3001
+}
+```
 
-Forge Core’s environment is optimized for reproducibility: the same commands drive local dev, CI validation, and Automagik Forge releases. Keep this runbook updated whenever workflows change.
+### Manual Port Override
+```bash
+BACKEND_PORT=4000 pnpm run dev
+```
+
+## Database Configuration
+
+### SQLite (Default)
+- **Location:** `dev_assets/vibe-kanban.db` (auto-copied from seed)
+- **Migrations:** Applied automatically on startup via SQLx
+- **Reset:** `rm -rf dev_assets && pnpm run dev`
+
+### Migration Workflow
+```bash
+# Create new migration
+sqlx migrate add <name>
+
+# Apply migrations (auto on startup)
+# Manual: sqlx migrate run
+
+# Prepare offline metadata
+npm run prepare-db
+```
+
+## Troubleshooting
+
+### Port Conflicts
+```bash
+# Check occupied ports
+lsof -i :3000
+
+# Reset port allocation
+rm .dev-ports.json
+pnpm run dev
+```
+
+### Stale Dev Assets
+```bash
+# Reset database and config
+rm -rf dev_assets
+pnpm run dev  # Auto-copies from dev_assets_seed
+```
+
+### Orphaned Worktrees
+```bash
+# List worktrees
+git worktree list
+
+# Remove specific worktree
+git worktree remove /var/tmp/automagik-forge-dev/worktrees/<id>
+
+# Prune stale references
+git worktree prune
+```
+
+### Type Generation Drift
+```bash
+# Verify types match Rust structs
+npm run generate-types:check
+
+# Regenerate if drift detected
+npm run generate-types
+```
+
+### CLI Build Mismatch
+Ensure `pnpm run build:npx` finished successfully, then verify `npx-cli/dist/automagik-forge*.zip` timestamps before running `npm pack`.
+
+### Shared Types Drift
+Compare `md5sum shared/types.ts ../automagik-forge/shared/types.ts`. If they differ, regenerate types in Forge Core and copy into the sibling repo as part of the release plan.
+
+### SQLx Compile Errors
+Rerun `npm run prepare-db` to refresh `sqlx-data.json` after touching migrations or schema definitions.
+
+## Frontend Integration
+
+### Shared Types
+After Rust struct changes:
+```bash
+# Backend
+npm run generate-types        # Regenerate shared/types.ts
+
+# Frontend (in sibling repo)
+npm install                    # Pick up updated types
+npm run build                  # Verify TypeScript compilation
+```
+
+### Breaking Changes Protocol
+1. Backend creates PR with type changes
+2. Regenerate types: `npm run generate-types`
+3. Frontend validates against new types
+4. Backend merges only after frontend approval
+5. Coordinated release
+
+## CI/CD Environment
+
+### GitHub Actions
+- **Secrets Required:** None (public repository)
+- **Workflow Triggers:** Push to `main`, PR to `main`
+- **Steps:** Build, test, type generation check, clippy lint
+
+### Deployment
+- **Manual:** `pnpm run build:npx` → `npm publish` (after approval)
+- **Automated:** Planned for Phase 1 (CI/CD pipeline)
+
+## Security Notes
+
+- **Never commit:** `.env`, `.dev-ports.json`, `dev_assets/`, API keys
+- **Gitignored:** All sensitive configuration files
+- **Vendored OpenSSL:** Included for portability, no external dependency
+
+## Conventions
+
+- **Environment Variables:** `UPPER_SNAKE_CASE`
+- **Ports:** Auto-assigned unless manually overridden
+- **Logs:** Structured via `tracing` (JSON-compatible)
+- **Asset Reset:** Delete `dev_assets/` to restore from seed
+
+Forge Core's environment is optimized for reproducibility: the same commands drive local dev, CI validation, and Automagik Forge releases. Keep this runbook updated whenever workflows change.

@@ -12,6 +12,7 @@ Forge Core is the Rust + TypeScript backend that powers every Automagik Forge se
 - **Task Operators / MCP Integrators:** Rely on the Axum API and MCP websocket servers to run attempts headlessly or from IDE extensions.
 
 ### Representative Personas
+
 **Forge Orchestrator (Lead Maintainer)**
 - Runs the kanban, triages bugs, and merges backend improvements.
 - Priorities: operational transparency, worktree hygiene, deterministic migrations.
@@ -24,11 +25,37 @@ Forge Core is the Rust + TypeScript backend that powers every Automagik Forge se
 - Embeds Forge inside IDEs and automation.
 - Priorities: stable MCP contracts, documented environment variables, scripts for preparing SQLx caches.
 
+**Frontend Developer**
+- Builds web UI for task orchestration and monitoring.
+- Needs stable REST API contracts and real-time task status updates.
+- Goals: Predictable API versioning, auto-generated TypeScript types, clear migration paths.
+
+**CLI User (Developer)**
+- Runs Forge backend locally for development workflows.
+- Needs simple setup, automatic port allocation, and clean teardown.
+- Goals: One-command startup (`pnpm run dev`), automatic seed data, clear error messages.
+
+**Agent Executor**
+- Coding agent (Claude Code, Codex, etc.) executing tasks via MCP.
+- Needs isolated worktrees, clean git state, and reliable task handoff.
+- Goals: Guaranteed isolation, automatic cleanup, persistent session state.
+
 ## The Problem We Solve
 
-- **Multi-Agent Coordination:** Automagik Forge delegates work to multiple agents simultaneously. Forge Core must keep their worktrees isolated, capture commit metadata, and stream logs through the API without blocking other tasks.
-- **Cross-Repo Safety:** The frontend repo vendors shared TypeScript types, expects certain REST/MCP contracts, and downloads CLI bundles from this workspace. Backend changes can break production if we do not publish guardrails and migration kits.
-- **Local Developer Ergonomics:** Contributors span Rust and JavaScript contexts. They need one command to spin up the backend with seeded assets, deterministic ports, and SQLx caches ready for offline compilation.
+### Multi-Agent Coordination
+Automagik Forge delegates work to multiple agents simultaneously. Forge Core must keep their worktrees isolated, capture commit metadata, and stream logs through the API without blocking other tasks.
+
+**Our Approach:** Dedicated git worktrees per task attempt (`/var/tmp/automagik-forge-dev/worktrees/<task_id>`), automatic cleanup on completion, and orphan detection for stale workspaces.
+
+### Cross-Repo Safety
+The frontend repo vendors shared TypeScript types, expects certain REST/MCP contracts, and downloads CLI bundles from this workspace. Backend changes can break production if we do not publish guardrails and migration kits.
+
+**Our Approach:** Treat schema changes as breaking until proven safe, auto-generate TypeScript types from Rust structs, and coordinate migrations with frontend before deployment.
+
+### Local Developer Ergonomics
+Contributors span Rust and JavaScript contexts. They need one command to spin up the backend with seeded assets, deterministic ports, and SQLx caches ready for offline compilation.
+
+**Our Approach:** Auto-allocate ports, copy dev seed assets (`dev_assets_seed/`), provide clear setup script (`./setup.sh`), and bundle everything via `pnpm run dev`.
 
 ## Differentiators
 
@@ -40,12 +67,33 @@ Forge Core is the Rust + TypeScript backend that powers every Automagik Forge se
 
 ## Symbiosis with Automagik Forge
 
-- The sibling repo consumes backend APIs, `shared/types.ts`, and CLI bundles. Every backend change must include a migration story, a regenerated types artifact, and packaging notes so the frontend can update deliberately.
-- Release cadence: bump `package.json` + Cargo versions, run `pnpm run build:npx`, publish the npm tarballs from `npx-cli/`, then update Automagik Forge’s dependency pins (CLI + shared types) before announcing the release.
-- Compatibility checklist before merging:
-  - No breaking SQLx migrations without a feature flag or immediate Automagik Forge upgrade plan.
-  - MCP schemas remain backward compatible; new capabilities ship behind explicit version gates.
-  - `shared/types.ts` differences between repos are intentional and called out in the install report.
+The sibling repo consumes backend APIs, `shared/types.ts`, and CLI bundles. Every backend change must include a migration story, a regenerated types artifact, and packaging notes so the frontend can update deliberately.
+
+### Non-Breaking Policy
+Backend maintains API stability unless coordinated with frontend:
+- Schema changes require frontend approval
+- TypeScript types (`shared/types.ts`) regenerated before frontend integration
+- Migration compatibility verified before merge
+
+### Release Handshake
+1. Backend creates PR with type changes
+2. Frontend validates against new types
+3. Backend merges only after frontend confirms compatibility
+4. Frontend updates dependency after npm publish
+
+### Current Alignment
+- **Backend Branch:** `main` (stable API)
+- **Backend Version:** `0.0.115` (from package.json)
+- **Latest Migration:** `20251020000001_add_agent_task_status.sql`
+- **Shared Types:** Auto-generated via `npm run generate-types`
+
+### Release Cadence
+Bump `package.json` + Cargo versions, run `pnpm run build:npx`, publish the npm tarballs from `npx-cli/`, then update Automagik Forge's dependency pins (CLI + shared types) before announcing the release.
+
+### Compatibility Checklist (Before Merging)
+- No breaking SQLx migrations without a feature flag or immediate Automagik Forge upgrade plan.
+- MCP schemas remain backward compatible; new capabilities ship behind explicit version gates.
+- `shared/types.ts` differences between repos are intentional and called out in the install report.
 
 ## Guardrails & Non-Negotiables
 
