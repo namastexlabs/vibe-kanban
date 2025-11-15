@@ -1,4 +1,10 @@
-use std::{future::Future, path::PathBuf, str::FromStr};
+use std::{
+    cmp::Ordering,
+    future::Future,
+    path::PathBuf,
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 use db::models::{
     project::Project,
@@ -7,18 +13,26 @@ use db::models::{
 };
 use executors::{executors::BaseCodingAgent, profile::ExecutorProfileId};
 use rmcp::{
-    ErrorData, ServerHandler,
+    ErrorData, RoleServer, ServerHandler,
     handler::server::tool::{Parameters, ToolRouter},
     model::{
-        CallToolResult, Content, Implementation, ProtocolVersion, ServerCapabilities, ServerInfo,
+        CallToolResult, Content, Implementation, InitializeRequestParam, ProtocolVersion,
+        ServerCapabilities, ServerInfo,
     },
     schemars, tool, tool_handler, tool_router,
+    service::RequestContext,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json;
+use tracing::info;
 use uuid::Uuid;
 
 use crate::routes::task_attempts::CreateTaskAttemptBody;
+
+const SUPPORTED_PROTOCOL_VERSIONS: [ProtocolVersion; 2] = [
+    ProtocolVersion::V_2025_03_26,
+    ProtocolVersion::V_2024_11_05,
+];
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CreateTaskRequest {
@@ -239,6 +253,7 @@ pub struct TaskServer {
     client: reqwest::Client,
     base_url: String,
     tool_router: ToolRouter<TaskServer>,
+    negotiated_protocol_version: Arc<RwLock<ProtocolVersion>>,
 }
 
 impl TaskServer {
@@ -247,6 +262,7 @@ impl TaskServer {
             client: reqwest::Client::new(),
             base_url: base_url.to_string(),
             tool_router: Self::tool_router(),
+            negotiated_protocol_version: Arc::new(RwLock::new(Self::latest_supported_protocol())),
         }
     }
 }
@@ -316,6 +332,112 @@ impl TaskServer {
             "{}/{}",
             self.base_url.trim_end_matches('/'),
             path.trim_start_matches('/')
+        )
+    }
+
+    fn supported_protocol_versions() -> &'static [ProtocolVersion] {
+        &SUPPORTED_PROTOCOL_VERSIONS
+    }
+
+    fn latest_supported_protocol() -> ProtocolVersion {
+        Self::supported_protocol_versions()
+            .first()
+            .expect("supported protocols list cannot be empty")
+            .clone()
+    }
+
+    fn minimum_supported_protocol() -> ProtocolVersion {
+        Self::supported_protocol_versions()
+            .last()
+            .expect("supported protocols list cannot be empty")
+            .clone()
+    }
+
+    fn current_protocol_version(&self) -> ProtocolVersion {
+        self.negotiated_protocol_version
+            .read()
+            .expect("protocol negotiation lock poisoned")
+            .clone()
+    }
+
+    fn set_negotiated_protocol_version(&self, version: ProtocolVersion) {
+        let mut guard = self
+            .negotiated_protocol_version
+            .write()
+            .expect("protocol negotiation lock poisoned");
+        *guard = version;
+    }
+
+    fn server_info_for_version(&self, protocol_version: ProtocolVersion) -> ServerInfo {
+        ServerInfo {
+            protocol_version,
+            capabilities: ServerCapabilities::builder().enable_tools().build(),
+            server_info: Implementation {
+                name: "automagik-forge".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            instructions: Some("A task and project management server. If you need to create or update tickets or tasks then use these tools. Most of them absolutely require that you pass the `project_id` of the project that you are currently working on. This should be provided to you. Call `list_tasks` to fetch the `task_ids` of all the tasks in a project`. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task'. Make sure to pass `project_id` or `task_id` where required. You can use list tools to get the available ids.".to_string()),
+        }
+    }
+
+    fn log_downgrade_if_needed(
+        requested: &ProtocolVersion,
+        negotiated: &ProtocolVersion,
+    ) {
+        let latest = Self::latest_supported_protocol();
+        if negotiated != &latest {
+            info!(
+                requested_protocol = %requested,
+                negotiated_protocol = %negotiated,
+                latest_supported_protocol = %latest,
+                "Downgrading MCP protocol version for backward compatibility"
+            );
+        }
+    }
+
+    fn negotiate_protocol_version(
+        requested: &ProtocolVersion,
+    ) -> Result<ProtocolVersion, ErrorData> {
+        for supported in Self::supported_protocol_versions() {
+            match requested.partial_cmp(supported) {
+                Some(Ordering::Greater) | Some(Ordering::Equal) => {
+                    return Ok(supported.clone());
+                }
+                Some(Ordering::Less) => continue,
+                None => {
+                    return Err(ErrorData::invalid_params(
+                        format!(
+                            "Unable to compare requested MCP protocol version ({requested}) with supported versions"
+                        ),
+                        Some(serde_json::json!({
+                            "requested_protocol": requested.to_string(),
+                            "supported_protocols": Self::supported_protocol_versions()
+                                .iter()
+                                .map(|v| v.to_string())
+                                .collect::<Vec<_>>(),
+                        })),
+                    ))
+                }
+            }
+        }
+
+        Err(Self::protocol_version_too_old_error(requested))
+    }
+
+    fn protocol_version_too_old_error(requested: &ProtocolVersion) -> ErrorData {
+        let minimum = Self::minimum_supported_protocol();
+        ErrorData::invalid_params(
+            format!(
+                "Requested MCP protocol version ({requested}) is older than the supported minimum ({minimum})"
+            ),
+            Some(serde_json::json!({
+                "requested_protocol": requested.to_string(),
+                "minimum_supported_protocol": minimum.to_string(),
+                "supported_protocols": Self::supported_protocol_versions()
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>(),
+            })),
         )
     }
 }
@@ -590,17 +712,79 @@ impl TaskServer {
 
 #[tool_handler]
 impl ServerHandler for TaskServer {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            protocol_version: ProtocolVersion::V_2025_03_26,
-            capabilities: ServerCapabilities::builder()
-                .enable_tools()
-                .build(),
-            server_info: Implementation {
-                name: "automagik-forge".to_string(),
-                version: "1.0.0".to_string(),
-            },
-            instructions: Some("A task and project management server. If you need to create or update tickets or tasks then use these tools. Most of them absolutely require that you pass the `project_id` of the project that you are currently working on. This should be provided to you. Call `list_tasks` to fetch the `task_ids` of all the tasks in a project`. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task'. Make sure to pass `project_id` or `task_id` where required. You can use list tools to get the available ids.".to_string()),
+    fn initialize(
+        &self,
+        request: InitializeRequestParam,
+        context: RequestContext<RoleServer>,
+    ) -> impl Future<Output = Result<ServerInfo, ErrorData>> + Send + '_ {
+        async move {
+            if context.peer.peer_info().is_none() {
+                context.peer.set_peer_info(request.clone());
+            }
+
+            let requested_version = request.protocol_version.clone();
+            let negotiated_version = match Self::negotiate_protocol_version(&requested_version) {
+                Ok(version) => version,
+                Err(error) => return Err(error),
+            };
+
+            Self::log_downgrade_if_needed(&requested_version, &negotiated_version);
+            self.set_negotiated_protocol_version(negotiated_version.clone());
+
+            Ok(self.server_info_for_version(negotiated_version))
         }
+    }
+
+    /// Returns server info that reflects the currently negotiated protocol version so
+    /// any follow-up responses stay aligned with the handshake.
+    fn get_info(&self) -> ServerInfo {
+        let protocol_version = self.current_protocol_version();
+        self.server_info_for_version(protocol_version)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rmcp::model::ErrorCode;
+
+    fn custom_protocol_version(version: &str) -> ProtocolVersion {
+        serde_json::from_str::<ProtocolVersion>(&format!("\"{version}\"")).unwrap()
+    }
+
+    #[test]
+    fn client_requesting_latest_version_receives_latest() {
+        let negotiated =
+            TaskServer::negotiate_protocol_version(&ProtocolVersion::V_2025_03_26).unwrap();
+        assert_eq!(negotiated, ProtocolVersion::V_2025_03_26);
+    }
+
+    #[test]
+    fn client_requesting_older_version_negotiates_down() {
+        let negotiated =
+            TaskServer::negotiate_protocol_version(&ProtocolVersion::V_2024_11_05).unwrap();
+        assert_eq!(negotiated, ProtocolVersion::V_2024_11_05);
+    }
+
+    #[test]
+    fn client_requesting_newer_version_falls_back_to_latest() {
+        let version = custom_protocol_version("2026-01-01");
+        let negotiated = TaskServer::negotiate_protocol_version(&version).unwrap();
+        assert_eq!(negotiated, ProtocolVersion::V_2025_03_26);
+    }
+
+    #[test]
+    fn client_requesting_too_old_version_receives_error() {
+        let version = custom_protocol_version("2023-01-01");
+        let error = TaskServer::negotiate_protocol_version(&version).unwrap_err();
+        assert_eq!(error.code, ErrorCode::INVALID_PARAMS);
+    }
+
+    #[test]
+    fn get_info_reflects_negotiated_version() {
+        let server = TaskServer::new("http://example.com");
+        server.set_negotiated_protocol_version(ProtocolVersion::V_2024_11_05);
+        let info = server.get_info();
+        assert_eq!(info.protocol_version, ProtocolVersion::V_2024_11_05);
     }
 }
