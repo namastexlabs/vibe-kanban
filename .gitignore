@@ -83,3 +83,10 @@ dev_assets
 
 vibe-kanban-cloud/
 dev_assets_seed/db.sqlite
+
+# Genie runtime/state
+.genie/state/
+.genie/.session
+.genie/.framework-version
+.genie.backup-*
+.genie/CONTEXT.md

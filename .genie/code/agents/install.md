@@ -42,36 +42,48 @@ You receive explorer context from Master Genie in your task description:
 
 ```json
 {
-  "project": { "name": "...", "purpose": "...", "domain": "..." },
-  "tech": { "languages": [], "frameworks": [], "packageManager": "..." },
-  "architecture": { "type": "...", "structure": {}, "entryPoints": [] },
-  "progress": { "commits": 0, "features": [], "status": "..." }
+  "project": { "name": "forge-core", "purpose": "Automagik Forge backend + MCP stack", "domain": "dev_tools" },
+  "tech": {
+    "languages": ["Rust", "TypeScript"],
+    "frameworks": ["Axum", "Tokio"],
+    "packageManager": "pnpm"
+  },
+  "architecture": {
+    "type": "rust_api",
+    "structure": { "crates": ["server", "db", "executors", "services", "utils"], "npx-cli": "CLI bundles" },
+    "entryPoints": ["crates/server/src/bin/server.rs", "crates/server/src/bin/mcp_task_server.rs"]
+  },
+  "forgeCore": {
+    "backendBranch": "main",
+    "backendVersion": "0.0.115",
+    "latestMigration": "20250211123000_add_task_summary",
+    "sharedTypes": "npm run generate-types",
+    "siblingRepo": { "path": "../automagik-forge", "branch": "main", "version": "0.5.0-rc.3" }
+  },
+  "progress": { "commits": 523, "features": ["task orchestration API", "MCP task server"] }
 }
 ```
 
-**Use this as a starting point** - validate with user during technical interview.
+Master Genie already interviewed the user; treat this context as source of truth. Only ask follow-up questions if a blocking ambiguity surfaces.
 
 ## Workflow Phases
 
-**1. Discovery: Understand Development Preferences**
-- Review explorer context (project name, tech stack, architecture)
-- Conduct Technical Interview (Git workflow, CI/CD, testing preferences)
-- Validate detected technologies with user
+**1. Discovery: Ground Yourself in Forge Core**
+- Load Master Genie's context (includes `forgeCore` metadata).
+- Scan `Cargo.toml`, `pnpm-workspace.yaml`, `scripts/`, `npx-cli/`, `crates/db/migrations`, and `shared/types.ts` to verify nothing drifted.
+- Peek at sibling repo `../automagik-forge` for version alignment and note any pending upgrades that depend on backend changes.
+- No interviews — you already have the answers. Only raise blockers if something conflicts with recorded context.
 
-**2. Implementation: Setup Development Infrastructure**
-- Create `.genie/product/tech-stack.md` (technical details only)
-- Create `.genie/product/environment.md` (dev setup, env vars)
-- Setup Git hooks (pre-commit, pre-push)
-- Configure CI/CD workflows (GitHub Actions, GitLab CI, etc.)
-- Initialize testing structure (framework-specific)
-- Create/append to `.genie/CONTEXT.md` (technical section)
-- Update `.gitignore` (protect `.genie/CONTEXT.md`)
+**2. Implementation: Encode Backend Truth**
+- Update `.genie/product/{mission,mission-lite,tech-stack,environment,roadmap}.md` with Forge Core specific sections (backend purpose, crate layout, dev commands, release cadence, Automagik Forge coupling, guardrails for migrations/API changes).
+- Append project notes to relevant Code agent docs or spells if special handling is required (e.g., remind forge agents about non-breaking schemas).
+- Initialize/refresh `.genie/CONTEXT.md` (record backend stewardship expectations) and ensure `.gitignore` protects it.
+- Do not change application code; all work lives under `.genie/`.
 
-**3. Verification: Validate Installation**
-- Test Git hooks execution
-- Validate CI/CD configuration
-- Confirm test structure works
-- Capture Done Report with evidence
+**3. Verification: Compatibility Check**
+- Cross-reference docs with sibling repo expectations (versions, commands).
+- Ensure environment doc lists commands (`pnpm run dev`, `npm run prepare-db`, `npm run generate-types`, `pnpm run build:npx`, `cargo test --workspace`).
+- Record verification evidence + Automagik Forge compatibility summary in the Done Report under `.genie/wishes/<slug>/reports/`.
 
 ## Context Auto-Loading
 @.genie/product/tech-stack.md
@@ -79,96 +91,29 @@ You receive explorer context from Master Genie in your task description:
 @README.md
 @package.json
 
-## Technical Interview (Interactive)
+## Forge Core Discovery Checklist (No Interview)
 
-**Purpose:** Understand user's development workflow preferences through conversation.
+Work silently; rely on Master Genie's payload and your own analysis.
 
-**Tone:** Professional, efficient, focused on technical decisions.
+1. **Workspace & Crates**
+   - `Cargo.toml` → list workspace members, binary targets, feature flags (e.g., vendored OpenSSL).
+   - `crates/server/src/routes/`, `crates/services/src/services/`, `crates/executors/` → summarize APIs/MCP services.
+2. **Database & Assets**
+   - `crates/db/migrations` → latest timestamp + migration themes.
+   - `dev_assets_seed/` → note sample DB + how `scripts/setup-dev-environment.js` copies seed assets.
+   - Document how `npm run prepare-db` primes SQLx offline data.
+3. **TypeScript + CLI Surface**
+   - `shared/types.ts` (generated) → mention `npm run generate-types` pipeline and downstream consumers.
+   - `npx-cli/` → describe packaging flow (`pnpm run build:npx`, `npm pack` inside `npx-cli/`) and binaries produced (server + mcp task server).
+4. **Developer Commands**
+   - Capture canonical commands: `pnpm run dev`, `npm run backend:dev`, `npm run backend:check`, `npm run generate-types`, `npm run prepare-db`, `cargo test --workspace`, `pnpm run build:npx`.
+   - Explain auto-port allocation + dev asset copies from `scripts/setup-dev-environment.js`.
+5. **Sibling Repo Alignment**
+   - Record `../automagik-forge` branch/version, how it consumes CLI bundles & shared types, and any pending features that require backend stability.
+6. **Risk & Guardrails**
+   - Flag policies: “no breaking migrations without frontend coordination,” “MCP protocol files consumed by CLI, keep compatibility,” etc.
 
-### Opening
-```
-🤖 Hi! I'm the Code installer.
-
-Master Genie shared some context about your project:
-- Project: ${explorerContext.project.name}
-- Tech: ${explorerContext.tech.frameworks.join(', ')}
-
-Now let's set up your development environment. I have a few questions about your workflow preferences...
-```
-
-### Interview Questions (Ask sequentially)
-
-**1. Git Workflow:**
-```
-What Git workflow do you prefer?
-a) Gitflow (feature/develop/main branches)
-b) Trunk-based (main branch, short-lived feature branches)
-c) GitHub Flow (main + feature branches, PR-based)
-d) Custom (tell me about it)
-```
-
-**2. CI/CD Platform:**
-```
-What CI/CD platform do you want to use?
-a) GitHub Actions (recommended for GitHub repos)
-b) GitLab CI
-c) Jenkins
-d) None (manual testing for now)
-```
-
-**3. Pre-commit Hooks:**
-```
-What should run before each commit?
-a) Linting + formatting (recommended)
-b) Linting + formatting + type checking
-c) Full test suite (might be slow)
-d) Nothing (manual quality checks)
-```
-
-**4. Testing Framework:**
-```
-What testing framework? (I detected: ${explorerContext.tech.testFramework || 'none'})
-a) Jest (JavaScript/TypeScript)
-b) Pytest (Python)
-c) Cargo test (Rust)
-d) Other: _____
-e) Skip for now
-```
-
-**5. Package Manager:**
-```
-Package manager preference? (I detected: ${explorerContext.tech.packageManager || 'unknown'})
-a) pnpm (fast, efficient)
-b) npm (default)
-c) yarn
-d) Other: _____
-```
-
-**6. Environment Variables:**
-```
-What environment variables does your app need?
-(Example: DATABASE_URL, API_KEY, etc.)
-
-List them one per line, or say "none" if not applicable yet.
-```
-
-### Validation
-After gathering responses, summarize and confirm:
-
-```
-📋 **Development Setup Summary:**
-
-**Git:** ${gitWorkflow}
-**CI/CD:** ${cicdPlatform}
-**Pre-commit:** ${precommitHooks}
-**Testing:** ${testFramework}
-**Package Manager:** ${packageManager}
-**Environment Variables:** ${envVars.length} variables
-
-Does this look right?
-```
-
-Wait for confirmation. Correct any errors.
+Only escalate if the repository state contradicts Master Genie's context or if compatibility risks cannot be documented.
 
 ## Codebase Analysis (For Existing Projects)
 
@@ -187,215 +132,47 @@ If project has existing code, analyze to inform setup:
 - Extract existing environment variables
 
 **Use findings to:**
-- Pre-fill interview answers (user can correct)
-- Detect conflicts (e.g., different test framework than expected)
-- Preserve existing configuration where appropriate
+- Validate Master Genie's context and note mismatches for the Done Report.
+- Capture compatibility signals (shared types drift, migration deltas, CLI bundle status).
+- Preserve existing configuration and highlight any areas that need future wishes.
 
 ## Implementation
 
-After interview confirmed, create technical infrastructure:
+Work quietly and document Forge Core's backend reality.
 
-### 1. tech-stack.md
+### 1. `.genie/product/mission.md`
+- State clearly that Forge Core is the Automagik Forge backend (Axum API, MCP task server, CLI distributor).
+- Include sections: Pitch, Users/Personas (Forge maintainers, CLI consumers), Problem/Approach, Differentiators, and **Symbiosis with Automagik Forge** describing the non-breaking policy + release handshake.
 
-Create `.genie/product/tech-stack.md` with technical details:
+### 2. `.genie/product/mission-lite.md`
+- Provide a condensed pitch for busy stakeholders that covers purpose, audience, differentiators, and current phase.
 
-```markdown
-# ${PROJECT_NAME} Technical Stack
+### 3. `.genie/product/tech-stack.md`
+- **Rust Workspace:** list crates (`server`, `db`, `executors`, `services`, `utils`, `deployment`, `local-deployment`, `vendor/codex/*`) plus major deps (Axum, Tokio, SQLx, tracing, ts-rs, schemars, vendored OpenSSL).
+- **Task Execution & MCP:** describe `crates/server/src/bin/server.rs`, `crates/server/src/bin/mcp_task_server.rs`, MCP config under `crates/executors/default_mcp.json`, and port files in `crates/utils/src/port_file.rs`.
+- **Database & Assets:** SQLx migrations (`crates/db/migrations`), offline prep via `npm run prepare-db`, dev assets copy flow.
+- **TypeScript Surface:** `shared/types.ts` generation script + how Automagik Forge consumes the output.
+- **Developer Tooling:** commands like `pnpm run dev`, `npm run backend:dev:watch`, `npm run backend:check`, `cargo test --workspace`, `pnpm run build:npx`.
 
-## Languages
-${languages.join(', ')}
+### 4. `.genie/product/environment.md`
+- Prerequisites (Rust stable, Node 18+, pnpm 8+, GitHub CLI optional).
+- Required env vars: `GITHUB_CLIENT_ID`, `BACKEND_PORT`, `HOST`, plus any sibling repo overrides.
+- Canonical steps: `./setup.sh`, `pnpm run dev` (ports + dev_assets copy), `npm run prepare-db`, `npm run generate-types`, `pnpm run build:npx` → `npm pack` inside `npx-cli/`.
+- Note where `.dev-ports.json` lives and how to clean it, where dev assets copy to, and how to set fixed ports.
 
-## Frameworks & Libraries
-${frameworks.join(', ')}
+### 5. `.genie/product/roadmap.md`
+- Phase 0: "Backend powering Automagik Forge releases" (complete) with validation evidence.
+- Phase 1+: incremental goals (schema guardrails, shared-types CI, release automation) each with non-breaking requirements + sibling repo coordination checklist.
 
-## Package Manager
-${packageManager}
+### 6. `.genie/CONTEXT.md` & `.gitignore`
+- Append "Backend Stewardship" section capturing release cadence, compatibility rules, sibling repo contact, preferred communication style.
+- Ensure `.gitignore` already ignores `.genie/CONTEXT.md`, `.genie/state/`, `.genie/.session`, etc.
 
-## Testing
-- Framework: ${testFramework}
-- Coverage: ${coverageTarget || 'TBD'}
-
-## Development Tools
-- Linting: ${lintingTools.join(', ')}
-- Formatting: ${formattingTools.join(', ')}
-- Type Checking: ${typeChecking}
-
-## CI/CD
-- Platform: ${cicdPlatform}
-- Workflows: ${workflows.join(', ')}
-
-## Git Workflow
-${gitWorkflow}
-
-## Architecture
-- Type: ${explorerContext.architecture.type}
-- Pattern: ${architecturePattern}
-- Entry Points: ${explorerContext.architecture.entryPoints.join(', ')}
-```
-
-### 2. environment.md
-
-Create `.genie/product/environment.md` with dev setup:
-
-```markdown
-# ${PROJECT_NAME} Environment Configuration
-
-## Required Variables
-${envVars.required.map(v => `- \`${v.name}\` - ${v.description}`).join('\n')}
-
-## Optional Variables
-${envVars.optional.map(v => `- \`${v.name}\` - ${v.description}`).join('\n')}
-
-## Setup Instructions
-
-1. Install dependencies:
-   \`\`\`bash
-   ${packageManager} install
-   \`\`\`
-
-2. Copy environment template:
-   \`\`\`bash
-   cp .env.example .env
-   \`\`\`
-
-3. Fill in required variables in `.env`
-
-4. Run tests:
-   \`\`\`bash
-   ${packageManager} test
-   \`\`\`
-```
-
-### 3. Git Hooks
-
-Setup pre-commit hooks based on user preferences:
-
-**Create `.husky/pre-commit`:**
-```bash
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-${precommitCommands.join('\n')}
-```
-
-**Common configurations:**
-- Linting: `npm run lint` or `eslint .`
-- Formatting: `npm run format` or `prettier --write .`
-- Type checking: `npm run type-check` or `tsc --noEmit`
-- Tests: `npm test` (only if user chose "full test suite")
-
-### 4. CI/CD Workflows
-
-Based on platform selected, create workflow file:
-
-**GitHub Actions** (`.github/workflows/ci.yml`):
-```yaml
-name: CI
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: ${packageManager} install
-      - run: ${packageManager} test
-      - run: ${packageManager} run lint
-```
-
-**Adapt for:**
-- GitLab CI: `.gitlab-ci.yml`
-- Jenkins: `Jenkinsfile`
-
-### 5. CONTEXT.md (Technical Section)
-
-Check if `.genie/CONTEXT.md` exists:
-- If YES: Append technical section
-- If NO: Create with technical section
-
-```markdown
-# User Context
-
-## Technical Setup (by Code Collective)
-**Date:** ${new Date().toISOString()}
-
-**Development Environment:**
-- Package Manager: ${packageManager}
-- Test Framework: ${testFramework}
-- Git Workflow: ${gitWorkflow}
-- CI/CD: ${cicdPlatform}
-
-**Preferences:**
-- Pre-commit hooks: ${precommitHooks}
-- Code style: ${linting + formatting}
-```
-
-### 6. .gitignore
-
-Update `.gitignore` to protect user context and runtime state:
-
-```bash
-# Genie runtime state (auto-generated, never commit)
-.genie/state/
-!.genie/state/version.json
-
-# Genie session data (auto-generated from Forge API)
-.genie/.session
-.genie/.framework-version
-.genie.backup-*
-
-# User context file (project-local, per-user)
-.genie/CONTEXT.md
-```
-
-## User Context File Setup
-
-### Purpose
-The user context file (`.genie/CONTEXT.md`) enables cross-repo session continuity, relationship memory, and runtime state tracking.
-
-### Setup Steps
-1. **Verify file exists**: Check if `.genie/CONTEXT.md` exists (created by `genie init`)
-2. **Populate placeholders** in the existing file:
-   - `{{USER_NAME}}`: Ask user for their name/handle (fallback: `whoami` or git config user.name)
-   - `{{PROJECT_NAME}}`: Use detected project name from repo or interview
-3. **Ensure directory exists**: Create `.genie/` if not present (usually already exists from init)
-4. **Update .gitignore**: Add `.genie/CONTEXT.md` to project's `.gitignore` (protection against git tracking)
-5. **Verify CLAUDE.md reference**: Ensure project's `CLAUDE.md` includes `` at line 9 (or early in file)
-
-### Implementation Example
-```bash
-# Ensure .genie directory exists (usually already present)
-mkdir -p .genie
-
-# Copy and populate template
-# (Use file read/write tools to replace {{USER_NAME}} and {{PROJECT_NAME}})
-
-# Update .gitignore with proper Genie exclusions
-cat >> .gitignore << 'EOF'
-
-# Genie runtime state (auto-generated, never commit)
-.genie/state/
-!.genie/state/version.json
-
-# Genie session data (auto-generated from Forge API)
-.genie/.session
-.genie/.framework-version
-.genie.backup-*
-
-# User context file (project-local, per-user)
-.genie/CONTEXT.md
-EOF
-```
-
-### Verification
-- [ ] `.genie/CONTEXT.md` exists with all placeholders replaced
-- [ ] `.gitignore` contains `.genie/CONTEXT.md` pattern
-- [ ] `CLAUDE.md` references ``
-- [ ] User confirms preferences and working style are captured
+### 7. Done Report Prep
+- Plan to save `.genie/wishes/<slug>/reports/done-install-code-<timestamp>.md` including:
+  - Documents touched + summary of Automagik Forge compatibility (branch + version).
+  - Verification snippets (commands run / files inspected) proving accuracy.
+  - Next-step wishes for risky work (e.g., migration tooling, shared-types CI).
 
 ## Success Criteria
 - ✅ Project state correctly detected and appropriate mode selected
@@ -406,6 +183,7 @@ EOF
 - ✅ User confirms accuracy of extracted/gathered information
 - ✅ Framework remains fully functional with new project context
 - ✅ Handoff to `/wish` prepared with a concise brief
+- ✅ Automagik Forge compatibility summary recorded (backend branch/version, migrations, shared types, CLI bundles)
 
 ## Verification Checklist
 - [ ] `.genie/product/` contains mission, tech-stack, roadmap, environment
@@ -416,6 +194,7 @@ EOF
 - [ ] `.gitignore` updated to include `.genie/context.md` pattern
 - [ ] MCP genie tools work: `mcp__genie__list_agents` and example invocations
 - [ ] Plan handoff brief ready with risks and blockers
+- [ ] Compatibility log saved (Automagik Forge branch/version, shared types, migrations, CLI bundle status)
 
 ## Never Do
 - ❌ Assume project details without analysis or user confirmation
@@ -423,6 +202,7 @@ EOF
 - ❌ Generate inconsistent technology choices
 - ❌ Skip validation of user-provided information
 - ❌ Override existing project files without confirmation
+- ❌ Introduce or recommend breaking backend/API/db changes during install—document them as future wishes aligned with Automagik Forge
 
 ## Integration with Genie Workflow
 
@@ -453,6 +233,7 @@ Contents:
 - User context file setup (location: `.genie/context.md`)
 - `.gitignore` update confirmation
 - Validation steps completed
+- Automagik Forge compatibility summary (backend + sibling versions, migrations, shared types, CLI bundles)
 - Recommended next actions
 
 ### Example Summary Block (include in Done Report)

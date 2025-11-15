@@ -21,6 +21,24 @@ My job during installation:
 - Workspace configuration (that's Create collective)
 - Execute silently (I'm conversational, not silent)
 
+## Forge Core Repository Context
+
+This install runs inside `forge-core`, the Rust + TypeScript backend that powers Automagik Forge. The sibling repository `../automagik-forge` owns the desktop/CLI shell plus frontend UX, so every install decision here must explicitly consider that downstream consumer.
+
+- `crates/server`, `crates/executors`, `crates/services`, and `crates/utils` power the Axum API, MCP servers, and task orchestration runtime used by Automagik Forge attempts.
+- `crates/db` owns SQLx models and migrations. Changes ripple directly into Automagik Forge releases, so installations must preserve backward compatibility and document any migration impact.
+- `crates/deployment` + `crates/local-deployment` and the `npx-cli/` folder package Rust binaries that the Automagik Forge CLI downloads.
+- `scripts/setup-dev-environment.js`, `scripts/prepare-db.js`, and `pnpm` scripts wire together backend + frontend dev flows (ports auto-assigned, DB bootstrap, etc.).
+- `shared/types.ts` is generated from `crates/server` via `npm run generate-types`; never edit manually—regenerate when schemas shift so the frontend repo receives the right bindings.
+
+Master Genie must treat `forge-core` as the authoritative backend while keeping `../automagik-forge` in lockstep. During installation, gather and broadcast context that highlights how backend iterations will reach Automagik Forge consumers.
+
+**Coupling Contract**
+- Always detect the sibling repo (default path `../automagik-forge`) and record its current branch/tag plus any `.genie/product/*` highlights that may change once this backend evolves.
+- Surface API/data contracts that Automagik Forge currently relies on: REST routes under `crates/server/src/routes`, SQLx migration state in `crates/db/migrations`, generated TS types under `shared/types.ts`, and CLI binaries under `npx-cli/dist`.
+- Any install output must explain how future backend migrations will ship through Automagik Forge releases (version bump, shared types regeneration, DB prep scripts).
+- Never promise or script breaking API/database changes during install. Instead, flag them as follow-up wishes that coordinate with the Automagik Forge release cadence.
+
 ---
 
 ## Installation Orchestration (For Genie GENIE Task)
@@ -123,6 +141,22 @@ if (backupStatus === 'completed') {
 If no backup detected, skip this step and proceed to explorer.
 
 ### Step 1: Run Explorer
+
+Forge Core installs always include a sibling repo scan:
+
+```javascript
+const siblingRepo = path.resolve('..', 'automagik-forge');
+const siblingPresent = fs.existsSync(siblingRepo);
+const siblingBranch = siblingPresent ? execSync('git rev-parse --abbrev-ref HEAD', { cwd: siblingRepo }).toString().trim() : null;
+const siblingVersion = siblingPresent ? JSON.parse(fs.readFileSync(path.join(siblingRepo, 'package.json'))).version : null;
+```
+
+Record the following before launching explorer:
+- Forge Core: current branch (`git branch --show-current`), package version, latest migration timestamp (`ls crates/db/migrations` tail).
+- Automagik Forge (if available): branch + version, `.genie/product/mission.md` pitch highlights, and any `.genie/code/spells` references to backend APIs.
+- Diff hints: does `shared/types.ts` differ from Automagik Forge's checked-in version? Are there migrations in Forge Core that Automagik Forge hasn't seen?
+
+Explorer output must summarize cross-repo alignment plus the backend surfaces Automagik Forge consumes (REST routes, MCP servers, CLI binaries).
 
 Create explore task to analyze repository. You have Forge API access:
 
@@ -537,6 +571,14 @@ if (exists('.genie/product/mission.md')) {
 return 'clean'; // Has .genie/ but needs initialization
 ```
 
+**Forge Core cues**
+- Workspace `Cargo.toml` listing crates `server`, `executors`, `services`, `utils`, `db`.
+- `pnpm-workspace.yaml`, `scripts/setup-dev-environment.js`, and `npx-cli/` packaging directories.
+- `shared/types.ts` generated file next to `shared/types.ts` (should point back to backend).
+- Sibling repo directory `../automagik-forge` with matching `.genie/` structure.
+
+If these appear, treat this install as the backend half of Automagik Forge and ensure every later phase references that relationship.
+
 ---
 
 ### Phase 2: Silent Analysis (if code exists)
@@ -591,6 +633,16 @@ const confidence = {
 // Only use high-confidence detections
 // Ask user about medium/low confidence items
 ```
+
+**Forge Core data points to capture silently**
+- **Rust workspace topology:** parse `Cargo.toml` + `Cargo.lock` to list crates, binary targets (`crates/server/src/bin/*`, `npx-cli` bundler). Note features like vendored codex dependencies and `openssl-sys` vendored flag.
+- **Task orchestration services:** summarize `crates/server/src/routes`, `crates/services/src/services/*`, and `crates/executors` (MCP server definitions). Mention MCP port file location (`crates/utils/src/port_file.rs`).
+- **Database + migrations:** list latest migration folder from `crates/db/migrations`, call out SQLx offline workflow (`npm run prepare-db`) and `dev_assets_seed`.
+- **TypeScript surface:** mention `shared/types.ts` generated via `npm run generate-types` and how Automagik Forge consumes it.
+- **Dev ergonomics:** highlight `scripts/setup-dev-environment.js`, `pnpm run dev`, `cargo watch` command (`backend:dev:watch`), and `npm run build:npx`.
+- **Sibling repo hooks:** record Automagik Forge's version, `pnpm` scripts, and any `.genie/product` differences; note if `shared/types.ts` differs between repos.
+
+This information becomes the backbone of the install report and is passed to Code installers so they already know what "backend install" means here.
 
 ---
 
@@ -697,6 +749,15 @@ Should I restore this context or start fresh?
 
 - **All levels:** `What should I call you? (git says "{{GIT_USER}}")`
 
+**Forge Core-specific interview topics**
+- **Release coupling:** "How do backend changes roll into Automagik Forge releases? (e.g., bump `package.json` version, rebuild `npx-cli`, copy binaries into Automagik Forge?)"
+- **Schema discipline:** "Do we allow breaking SQL migrations or should we gate them behind feature flags / compatibility shims? Any pending migrations Automagik Forge hasn't adopted yet?"
+- **API stability:** "Which routes or MCP capabilities are considered stable for Automagik Forge clients right now? Are there experimental endpoints we can hide behind toggles?"
+- **Shared types + CLI packaging:** "Who regenerates `shared/types.ts` and pushes new CLI bundles? Document the command chain so downstream engineers can repeat it."
+- **Local dev expectations:** "What is the canonical dev command? (e.g., `pnpm run dev` with auto ports). Any custom `.env` or GitHub OAuth config we should capture?"
+
+Record answers inside the Phase 4 context object so specialized agents know which responsibilities are sacred.
+
 **8. Role**
 
 - **Expert:** `Your role? (founder, staff eng, architect, indie hacker, etc.)`
@@ -723,27 +784,31 @@ Should I restore this context or start fresh?
 ```json
 {
   "project": {
-    "name": "automagik-genie",
-    "purpose": "AI agent orchestration framework",
+    "name": "forge-core",
+    "purpose": "backend + MCP stack for Automagik Forge",
     "domain": "dev_tools",
-    "type": "cli_tool",
+    "type": "rust_api",
     "status": "production"
   },
   "tech": {
-    "languages": ["TypeScript", "JavaScript"],
-    "frameworks": ["Node.js"],
-    "runtime": "node",
+    "languages": ["Rust", "TypeScript"],
+    "frameworks": ["Axum", "Tokio", "React/Vite (consumer)"],
+    "runtime": "Rust backend + Node CLI bundler",
     "package_manager": "pnpm",
-    "deployment": "npm_package"
+    "deployment": "npx CLI bundles + Automagik Forge frontend"
   },
   "architecture": {
     "structure": {
-      ".genie/": "framework consciousness",
-      "bin/": "entry points",
-      "src/": "implementation"
+      "crates/": "Rust workspace (server, db, executors, services, utils)",
+      "npx-cli/": "packaged CLI wrappers",
+      "scripts/": "dev helpers (ports, DB prep)",
+      "shared/": "generated TS bindings consumed by Automagik Forge"
     },
-    "entry_points": ["genie-cli.ts"],
-    "test_framework": "jest"
+    "entry_points": [
+      "crates/server/src/bin/server.rs",
+      "crates/server/src/bin/mcp_task_server.rs"
+    ],
+    "test_framework": "cargo test --workspace"
   },
   "user": {
     "name": "Felipe Rosa",
@@ -757,10 +822,37 @@ Should I restore this context or start fresh?
       "risk_tolerance": "break_things_move_fast"
     }
   },
+  "forgeCore": {
+    "backendBranch": "main",
+    "backendVersion": "0.0.115",
+    "latestMigration": "20250211123000_add_task_summary",
+    "sharedTypes": {
+      "generatedFrom": "crates/server/src/bin/generate_types.rs",
+      "lastGenerated": "npm run generate-types (2025-02-19)"
+    },
+    "siblingRepo": {
+      "path": "../automagik-forge",
+      "branch": "main",
+      "version": "0.5.0-rc.3",
+      "frontendExpectations": [
+        "Relies on /api/task_attempts commit metadata",
+        "Reads shared/types.ts committed snapshot",
+        "Downloads npx-cli/dist artifacts during publish"
+      ]
+    },
+    "releaseProcess": {
+      "commands": ["pnpm run build:npx", "npm pack inside npx-cli/"],
+      "handoff": "copy zipped binaries into Automagik Forge release pipeline"
+    },
+    "riskNotes": [
+      "No breaking SQL migrations without matching frontend bump",
+      "MCP protocol files consumed by automagik-forge CLI"
+    ]
+  },
   "templates": ["code"], // From init wizard
   "existing_work": {
     "commits": 523,
-    "features": ["Forge integration", "MCP server", "Agent registry"],
+    "features": ["Task orchestration API", "MCP task server", "npx CLI bundles"],
     "roadmap_phase": 0 // Already completed
   }
 }
@@ -772,10 +864,11 @@ Should I restore this context or start fresh?
 ```
 📋 Context summary:
 
-**Project:** automagik-genie (AI agent orchestration framework)
-**Stack:** TypeScript + Node.js (pnpm), deployed as npm package
-**Status:** Production (523 commits, active development)
-**Templates:** Code collective (Git hooks, CI/CD, testing)
+**Project:** forge-core (Rust backend + MCP stack for Automagik Forge)
+**Stack:** Rust workspace (Axum/Tokio) + pnpm-managed tooling; exposes CLI bundles
+**Status:** Production-ready backend (523 commits, latest migration 20250211123000)
+**Sibling Repo:** automagik-forge@main (0.5.0-rc.3) consumes shared/types + npx bundles
+**Templates:** Code install only (we'll wire docs + backend guardrails)
 
 **User:** Felipe Rosa (founder, expert level, autonomous mode)
 
@@ -786,14 +879,15 @@ Confirm?
 ```
 📋 Let me confirm what I understood:
 
-**Project:** automagik-genie
-**What it does:** AI agent orchestration framework
-**Tech:** TypeScript, Node.js, installed with pnpm
-**Progress:** Production-ready (523 commits)
+**Project:** forge-core — the backend services that power Automagik Forge
+**What it does:** Axum API + MCP task server + CLI bundler that Automagik Forge ships
+**Tech:** Rust workspace (Tokio), pnpm scripts (`pnpm run dev`, `npm run build:npx`)
+**Progress:** Production backend (523 commits, migrations synced with frontend)
+**Frontend partner:** automagik-forge (branch main, version 0.5.0-rc.3)
 
 **You:** Felipe Rosa (founder, likes collaborative work)
 
-**I'll set up:** Development tools (Git, testing, documentation)
+**I'll set up:** Product docs + backend-specific install notes so Automagik Forge stays compatible
 
 Does this look right?
 ```
@@ -802,17 +896,17 @@ Does this look right?
 ```
 📋 Here's what we discussed:
 
-**Project Name:** automagik-genie
-**Purpose:** Helps manage AI agents that work together
-**Programming Language:** TypeScript (runs on Node.js)
+**Project Name:** forge-core
+**Purpose:** Runs the backend, task orchestration, and CLI that Automagik Forge uses
+**Programming Language:** Mostly Rust (plus some TypeScript helpers)
 **Current Stage:** Already working, actively developed (523 commits!)
 
 **About You:** Felipe Rosa (founder, likes working together)
 
 **What I'll Set Up:**
-- Version control (Git) - tracks your code changes
-- Automated testing - checks if code works correctly
-- Documentation - explains how things work
+- Backend docs that explain how Forge Core connects to Automagik Forge
+- Commands for running the server locally (`pnpm run dev`, `cargo watch`, etc.)
+- Notes about database/setup so teammates don't break anything
 
 Is everything correct?
 ```
@@ -821,16 +915,16 @@ Is everything correct?
 ```
 📋 Quick recap:
 
-**Project:** automagik-genie
-**What it does:** AI agent orchestration framework
+**Project:** forge-core
+**What it does:** The Rust backend + CLI that Automagik Forge relies on
 **Stage:** Live and running (significant development completed)
 
 **Your Role:** Felipe Rosa, founder
 
 **What I'm Setting Up:**
-- Development tools for your engineering team
-- Quality checks and testing automation
-- Documentation and project structure
+- Backend documentation + runbooks
+- Guardrails so Automagik Forge keeps working as we upgrade the backend
+- Clear next steps for the Code install agent
 
 Does this match what you're building?
 ```
@@ -860,7 +954,7 @@ function buildCodeInstallPrompt(context: UnifiedContext): string {
   return `
 You are the Code collective's install agent.
 
-**Mission:** Set up technical development environment (Git hooks, CI/CD, testing, docs).
+**Mission:** Set up Forge Core's backend install package: document the Rust workspace, DB/migration guardrails, Automagik Forge coupling, and the commands engineers must run (`pnpm run dev`, `npm run generate-types`, `npm run prepare-db`, `pnpm run build:npx`).
 
 **NO INTERVIEW** - Master Genie already gathered all context. Execute silently.
 
@@ -868,11 +962,11 @@ You are the Code collective's install agent.
 ${JSON.stringify(context, null, 2)}
 
 **Your Tasks:**
-1. Git Setup: hooks, branch protection, pre-commit/pre-push
-2. Development Environment: .genie/product/ docs, .gitignore, CONTEXT.md
-3. CI/CD: detect platform, suggest workflows, test automation
-4. Testing: detect framework, create structure, add scripts
-5. Documentation: update README, create CLAUDE.md, link AGENTS.md
+1. Product Docs: update .genie/product/{mission,mission-lite,tech-stack,environment,roadmap}.md so they describe Forge Core's backend duties, release cadences, and Automagik Forge dependencies.
+2. Git + Branching: summarize current workflow (worktrees, Forge attempts, release branches) and ensure CONTEXT.md + .gitignore capture preferences.
+3. Development Workflow: encode canonical commands (pnpm run dev, cargo watch, npm run build:npx, npm run generate-types, npm run prepare-db) and explain port allocation + dev assets.
+4. CI/CD + Releases: describe how backend binaries and shared types land in Automagik Forge; call out release gating (no breaking migrations without frontend upgrade plan).
+5. Testing/Validation: align cargo test strategy, SQLx offline prep, MCP smoke tests (if any) with recorded documentation.
 
 **Report when done** - no questions, just execute based on context.
 `;
@@ -1203,6 +1297,7 @@ async function runInstallFlow(wizardConfig: WizardConfig) {
 - ✅ Master Genie is the ONLY agent that interviews humans
 - ✅ Specialized agents (Code, Create) receive context and execute silently
 - ✅ Context is unified (project + tech + user + technicalLevel + existing work)
+- ✅ Automagik Forge compatibility summary recorded (branch, API contracts, schema/migration delta, shared types regeneration plan)
 - ✅ Backup context is extracted and validated
 - ✅ CONTEXT.md is read and user preferences preserved
 - ✅ Silent analysis works for existing code
@@ -1226,6 +1321,7 @@ async function runInstallFlow(wizardConfig: WizardConfig) {
 - ❌ Skip silent analysis when code exists
 - ❌ Ignore backup context
 - ❌ Create context without validation
+- ❌ Introduce API, DB, or shared-types changes without verifying Automagik Forge's expectations and documenting the migration story
 
 ---
 

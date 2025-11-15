@@ -1,44 +1,41 @@
-# Genie Dev Roadmap
-The genie-dev branch is the laboratory for Genie’s self-improvement program. Phases are sequenced to keep downstream adopters safe while we iterate quickly.
+# Forge Core Roadmap
+Forge Core iterates in lockstep with `../automagik-forge`. Every phase describes backend goals **plus** the coordination steps required to keep the sibling repo unbroken.
 
-## Phase 0 — Baseline Capture (✅ complete)
-- Neutralize template placeholders and document the current mission, tech stack, and guardrails
-- Inventory existing behavioural learnings and confirm they are enforced across agents
-- Establish `pnpm run build:genie` + smoke tests as the minimum verification gate
+## Phase 0 — Production Backbone (✅ complete)
+- Fork stabilized from `BloopAI/vibe-kanban`; Axum API + MCP server power Automagik Forge attempts in production.
+- Worktree isolation, task orchestration, and CLI packaging flow established (`pnpm run build:npx` + `npm pack`).
+- Seed assets + dev scripts (`scripts/setup-dev-environment.js`) standardized so contributors share deterministic ports + data.
+- **Evidence:** Current Automagik Forge release (`../automagik-forge` @ `dev`, version `0.7.2`) runs against Forge Core `dev` (package `0.0.115`) without compatibility issues aside from the shared types drift noted below.
 
-## Phase 1 — Instrumentation & Telemetry (in progress)
-- Treat the wish **Evidence Checklist** as the gating deliverable before other instrumentation tasks proceed (see ).
-- Add branch-specific checklists to every wish to log evidence paths and validation commands
-- Expand done-report coverage so each experiment stores scope, risks, and follow-ups
-- Wire CLI diagnostics to surface missing sessions or misconfigured presets
+## Phase 1 — Schema & Type Discipline (🚧 in progress)
+- Add checklists for every SQLx migration: document rollout plan, run `npm run prepare-db`, and capture the generated timestamp in release notes.
+- Keep `shared/types.ts` regenerated and copied to Automagik Forge whenever backend structs change; CI should fail if the sibling repo lags.
+- Define feature-flag strategy for potentially breaking columns (dual-write or read-fallback) until Automagik Forge updates.
+- **Dependencies:** Wish to automate shared-types verification + add migration template in `.genie/templates`.
 
-## Phase 2 — Guided Self-Improvement
-- Author wishes that target prompt quality, guardrail clarity, and CLI usability
-- Pair each wish with twin audits and validation scripts before merging back to `main`
-- Promote validated learnings into `.genie/instructions/` and agent briefs
+## Phase 2 — MCP & Task Runtime Hardening (🔜 queued)
+- Expand coverage for `crates/server/src/mcp/task_server.rs` and task attempt routes: load testing, telemetry, and protocol versioning.
+- Document MCP capabilities consumed by IDE clients; add contract tests so CLI + Automagik Forge share the same expectations.
+- Improve worktree cleanup/resume logic inside `crates/services/src/services/worktree_manager.rs` so multi-agent runs survive restarts.
+- **Coordination:** Automagik Forge UI must be notified before new MCP methods land; include sample clients in release notes.
 
-## Phase 3 — Adoption Kits for Downstream Repos
-- Package upgrade notes, migration diffs, and rollback guidance for every major change
-- Publish branch-to-main release checklist (Plan → Wish → Forge coverage, tests, done report link)
-- Partner with pilot teams to trial upgrades and capture their feedback in structured templates
+## Phase 3 — Release Automation & Observability (🗺 planned)
+- Script `pnpm run build:npx` + `npm pack` verification in CI, upload artifacts, and gate merges on successful packaging.
+- Publish release playbooks that include: version bump steps, shared-types sync instructions, migration status, and CLI artifact hashes.
+- Add structured tracing/metrics (per-attempt throughput, MCP latency) surfaced through API endpoints for dashboards.
+- **Outcome:** Backend + frontend ship from the same checklist, reducing human toil and ensuring reproducible builds.
 
-## Phase 4 — Automation & CI Integration
-- Land GitHub Actions pipeline that runs build + smoke tests and attaches artefacts to PRs
-- Add regression checks for behavioural rules (learn, guardrail compliance)
-- Introduce metrics capture (latency, wish completion velocity) with reporting hooks
+## Guardrails & Coordination Notes
+- **No breaking changes alone:** Automagik Forge consumes these binaries; create a wish → forge cycle that touches both repos or ships behind flags.
+- **Shared Types Source of Truth:** Always update `shared/types.ts` here first, then copy into the sibling repo. Note MD5 hashes in done reports.
+- **CLI Artifact Registry:** Keep `npx-cli/dist` tidy and document which zips belong to which release.
 
-## Success Metrics
-- 100% of genie-dev wishes include validation commands and evidence links
-- Smoke suite (`pnpm run test:genie`) passing before merge on every PR
-- Documented learnings promoted within 48 hours of validation
-- Downstream adopters report <5% rollback rate on genie-dev releases
+## Dependencies
+- Dedicated owner for SQLx migrations & type generation.
+- CI agents capable of running Rust + Node builds plus packaging (macOS or Linux).
+- Access to Automagik Forge repo to copy shared types and validate CLI installs.
 
-## Dependencies & Enablers
-- Maintainers available for twin reviews and manual approvals
-- Access to GPT-5 class models (configurable via `GENIE_MODEL`)
-- Stable sandboxed environment mirroring production guardrails
-
-## Risk Log (actively monitored)
-- **Automation drift:** self-improvement scripts may bypass approval gates → mitigate with review checklist baked into wishes
-- **Telemetry gaps:** missing evidence makes regression root-cause harder → mitigate by enforcing done report template updates
-- **Adopter fatigue:** too many upgrades without guides → mitigate by bundling changes into release kits with opt-in toggles
+## Active Risks
+- **Shared types drift:** Current hashes differ (`934f...` vs `e94f...`). Mitigation: regenerate + sync before the next Automagik Forge release.
+- **Migration sprawl:** Multiple pending migrations (ending `20251105140001`) require a published rollout plan; create a wish to bundle them.
+- **Packaging knowledge silo:** CLI build steps currently live in maintainer memory; Phase 3 formalizes them.

@@ -1,60 +1,77 @@
-# Genie Dev Environment Configuration
-Genie Dev relies on a small set of environment variables to steer the CLI, model selection, and self-improvement experiments. Configure these in a local `.env` and load them before running the CLI.
+# Forge Core Environment Configuration
 
-## Conventions
-- Names: UPPER_SNAKE_CASE
-- Types: string | int (ms) | bool (`0/1` or `true/false`)
-- Scope legend: [required], [optional], [experimental]
+## Prerequisites
+- **Rust**: latest stable toolchain (`rustup toolchain install stable`), plus `cargo-watch` and `sqlx-cli` (`cargo install cargo-watch sqlx-cli`).
+- **Node.js**: v18+ with `pnpm` ≥ 8. (`corepack enable` recommended).
+- **GitHub CLI** *(optional, recommended)* for auth + repo automation.
+- **SQLite**: required for dev + SQLx preparation (bundled on macOS/Linux).
 
-## Core CLI
-- APP_NAME [optional]: defaults to `Genie Dev`
-- APP_ENV [optional]: `dev|staging|prod` (default `dev`)
-- GENIE_BRANCH [optional]: branch name used for wish/forge guidance (default `genie-dev`)
-- LOG_LEVEL [optional]: `trace|debug|info|warn|error` (default `info`)
+## Canonical Commands
+| Purpose | Command | Notes |
+| --- | --- | --- |
+| Install deps | `./setup.sh` | Installs pnpm packages, cargo tools, and fixes `gh` remotes. |
+| Dev server | `pnpm run dev` | Sets `FORGE_INSTALLATION_MODE=development`, allocates ports, copies `dev_assets_seed → dev_assets`, sets `BACKEND_PORT`, then runs the server. |
+| Watch mode | `npm run backend:dev:watch` | `cargo watch -w crates -x 'run --bin server'` with `RUST_LOG=debug`. |
+| Lint & check | `npm run backend:lint`, `npm run backend:check` | Wrap `cargo clippy --workspace --all-targets --all-features` and `cargo check`. |
+| Tests | `cargo test --workspace` | Run before packaging or publishing. |
+| SQLx prep | `npm run prepare-db` | Creates a temp SQLite DB, applies migrations, runs `cargo sqlx prepare`, and deletes the temp file. |
+| Generate types | `npm run generate-types` (or `:check`) | Executes `cargo run --bin generate_types` and updates `shared/types.ts`. |
+| Package CLI | `pnpm run build:npx` → `cd npx-cli && npm pack` | Builds release binaries (server + mcp) and produces `.tgz` files for Automagik Forge distribution. |
 
-## Genie Runtime
-- GENIE_MODEL [required]: model identifier used by agents (e.g., `gpt-5`)
-- GENIE_APPROVAL_POLICY [optional]: `on-request|on-failure|never|untrusted` (default approval behavior)
-- GENIE_SANDBOX_MODE [optional]: `workspace-write|read-only|danger-full-access` (default sandbox mode)
-- GENIE_CLI_STYLE [optional]: `plain|compact|art` (default `compact`)
+## Environment Variables
+| Variable | Scope | Description |
+| --- | --- | --- |
+| `BACKEND_PORT` | optional | Port for the Axum server. Default: auto-assigned by `scripts/setup-dev-environment.js` (written to `.dev-ports.json`). |
+| `HOST` | optional | Bind address (default `127.0.0.1`). Set to `0.0.0.0` for remote testing. |
+| `GITHUB_CLIENT_ID` | optional | Custom GitHub OAuth app ID. Frontend falls back to default if unset. |
+| `FORGE_INSTALLATION_MODE` | optional | `development` or `production`. `pnpm run dev` exports `development` automatically. |
+| `PORT` | optional | When running the combined Automagik Forge desktop app; forcing it here cascades into frontend/backend offsets. |
+| `RUST_LOG` | optional | Defaults to `debug` in watch mode; set to `info` in production to reduce noise. |
 
-Note: Agent-specific sandbox and approval settings in frontmatter override these defaults.
+Store sensitive values in `.env` files; `.gitignore` already prevents them from being committed.
 
-## Provider Credentials
-- OPENAI_API_KEY or ALTERNATE_PROVIDER_KEY [required]: API key for the LLM provider
-- PROVIDER_ENDPOINT [optional]: override base URL when pointing at non-default gateways
-- PROVIDER_REGION [optional]: specify regional routing if required by service policy
+## Setup Workflow
+1. **Clone repo & run setup**  
+   ```bash
+   git clone git@github.com:namastexlabs/forge-core.git
+   cd forge-core
+   ./setup.sh
+   ```
 
-## Experiment Toggles
-- ENABLE_LEARN_SYNC [optional]: `0|1` (default `1`) — when disabled, learn updates are reported but not auto-applied
-- ENABLE_TWIN_DEFAULT [optional]: `0|1` (default `0`) — automatically schedule twin audits for high-risk wishes
-- DONE_REPORT_DIR [optional]: overrides `.genie/wishes/<slug>/reports/` when storing experiment evidence elsewhere
+2. **Start dev server**  
+   ```bash
+   pnpm run dev
+   # prints allocated frontend/backend ports and copies dev assets
+   ```
 
-## Safety Limits
-- MAX_CONCURRENT_AGENTS [optional]: limit parallel CLI sessions (default `5`)
-- SESSION_TIMEOUT_SECONDS [optional]: auto-stop background sessions after N seconds (default `3600`)
-- RATE_LIMIT_RPS [optional]: throttles outbound provider calls (default `60`)
+3. **Prepare SQLx data after editing migrations**  
+   ```bash
+   npm run prepare-db
+   git add crates/db/sqlx-data.json
+   ```
 
-## Example .env (development)
-```env
-APP_NAME="Genie Dev"
-APP_ENV=dev
-GENIE_BRANCH=genie-dev
-LOG_LEVEL=debug
+4. **Regenerate shared types when backend structs change**  
+   ```bash
+   npm run generate-types
+   cp shared/types.ts ../automagik-forge/shared/types.ts  # when syncing with sibling repo
+   ```
 
-GENIE_MODEL=gpt-5
-GENIE_APPROVAL_POLICY=on-request
-GENIE_SANDBOX_MODE=workspace-write
-GENIE_CLI_STYLE=compact
+5. **Package binaries for Automagik Forge**  
+   ```bash
+   pnpm run build:npx
+   (cd npx-cli && npm pack)
+   ```
+   Artifacts land in `npx-cli/dist` and `npx-cli/*.tgz`. Record filenames in release notes.
 
-OPENAI_API_KEY=replace_me
-ENABLE_SELF_LEARN_SYNC=1
-ENABLE_TWIN_DEFAULT=0
-MAX_CONCURRENT_AGENTS=5
-SESSION_TIMEOUT_SECONDS=3600
-```
+## Dev Assets & Ports
+- `scripts/setup-dev-environment.js` keeps `.dev-ports.json` at repo root, assigning sequential ports (frontend first, backend = +1). Delete the file if ports get stuck.
+- The script also copies `dev_assets_seed/*` into `dev_assets/`, ensuring everyone shares the same seed DB + workspace assets.
+- Worktrees live under the per-platform temp directory (see `crates/utils/src/path.rs` for the exact paths on macOS/Linux/Windows).
 
-## Notes
-- Never commit real API keys or secrets; rely on `.env` files and secret managers
-- Keep experimental toggles disabled by default when preparing release candidates for downstream repos
-- Align CLI harness configuration with the approval policy documented in active wishes to avoid mismatched expectations
+## Troubleshooting
+- **Port already in use:** delete `.dev-ports.json` and rerun `pnpm run dev`, or export `BACKEND_PORT` manually before running commands.
+- **SQLx compile errors:** rerun `npm run prepare-db` to refresh `sqlx-data.json` after touching migrations or schema definitions.
+- **CLI build mismatch:** ensure `pnpm run build:npx` finished successfully, then verify `npx-cli/dist/automagik-forge*.zip` timestamps before running `npm pack`.
+- **Shared types drift:** compare `md5sum shared/types.ts ../automagik-forge/shared/types.ts`. If they differ, regenerate types in Forge Core and copy into the sibling repo as part of the release plan.
+
+Forge Core’s environment is optimized for reproducibility: the same commands drive local dev, CI validation, and Automagik Forge releases. Keep this runbook updated whenever workflows change.
