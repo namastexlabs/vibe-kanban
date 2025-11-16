@@ -1,9 +1,13 @@
 [package]
 edition = "2024"
 name = "mcp-types"
-version = "0.44.0"
+version = { workspace = true }
+
+[lints]
+workspace = true
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-ts-rs = { version = "11", features = ["serde-json-impl", "no-serde-warnings"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+ts-rs = { workspace = true, features = ["serde-json-impl", "no-serde-warnings"] }
+schemars = { workspace = true }
