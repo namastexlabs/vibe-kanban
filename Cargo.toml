@@ -12,6 +12,9 @@ members = [
     "vendor/codex/codex-rs/protocol",
     "vendor/codex/codex-rs/app-server-protocol",
     "vendor/codex/codex-rs/mcp-types",
+    "vendor/codex/codex-rs/utils/git",
+    "vendor/codex/codex-rs/utils/image",
+    "vendor/codex/codex-rs/utils/cache",
 ]
 
 [workspace.package]
@@ -93,7 +96,7 @@ ratatui = "0.29.0"
 ratatui-macros = "0.6.0"
 regex-lite = "0.1.7"
 reqwest = "0.12"
-rmcp = { version = "0.8.5", default-features = false }
+rmcp = { version = "0.8.5" }
 schemars = "0.8.22"
 seccompiler = "0.5.0"
 sentry = "0.34.0"
@@ -150,6 +153,9 @@ zeroize = "1.8.2"
 codex-protocol = { path = "vendor/codex/codex-rs/protocol" }
 codex-app-server-protocol = { path = "vendor/codex/codex-rs/app-server-protocol" }
 mcp-types = { path = "vendor/codex/codex-rs/mcp-types" }
+codex-git = { path = "vendor/codex/codex-rs/utils/git" }
+codex-utils-image = { path = "vendor/codex/codex-rs/utils/image" }
+codex-utils-cache = { path = "vendor/codex/codex-rs/utils/cache" }
 
 [workspace.lints]
 rust = {}
