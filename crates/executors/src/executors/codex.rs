@@ -205,8 +205,10 @@ impl Codex {
             sandbox,
             config: self.build_config_overrides(),
             base_instructions: self.base_instructions.clone(),
-            include_plan_tool: self.include_plan_tool,
             include_apply_patch_tool: self.include_apply_patch_tool,
+            model_provider: None,
+            developer_instructions: None,
+            compact_prompt: None,
         }
     }
 

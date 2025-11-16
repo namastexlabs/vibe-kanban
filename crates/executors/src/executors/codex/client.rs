@@ -98,8 +98,10 @@ impl AppServerClient {
         let request = ClientRequest::ResumeConversation {
             request_id: self.next_request_id(),
             params: ResumeConversationParams {
-                path: rollout_path,
+                path: Some(rollout_path),
                 overrides: Some(overrides),
+                conversation_id: None,
+                history: None,
             },
         };
         self.send_request(request, "resumeConversation").await
@@ -111,7 +113,10 @@ impl AppServerClient {
     ) -> Result<AddConversationSubscriptionResponse, ExecutorError> {
         let request = ClientRequest::AddConversationListener {
             request_id: self.next_request_id(),
-            params: AddConversationListenerParams { conversation_id },
+            params: AddConversationListenerParams {
+                conversation_id,
+                experimental_raw_events: false,
+            },
         };
         self.send_request(request, "addConversationListener").await
     }
