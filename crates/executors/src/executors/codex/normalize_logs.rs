@@ -500,6 +500,8 @@ pub fn normalize_logs(msg_store: Arc<MsgStore>, worktree_path: &Path) {
                     command,
                     cwd: _,
                     reason,
+                    risk: _,
+                    parsed_cmd: _,
                 }) => {
                     state.assistant = None;
                     state.thinking = None;
@@ -978,10 +980,19 @@ pub fn normalize_logs(msg_store: Arc<MsgStore>, worktree_path: &Path) {
                 | EventMsg::ListCustomPromptsResponse(..)
                 | EventMsg::TurnAborted(..)
                 | EventMsg::ShutdownComplete
-                | EventMsg::ConversationPath(..)
                 | EventMsg::EnteredReviewMode(..)
                 | EventMsg::ExitedReviewMode(..)
-                | EventMsg::TaskComplete(..) => {}
+                | EventMsg::TaskComplete(..)
+                | EventMsg::Warning(..)
+                | EventMsg::DeprecationNotice(..)
+                | EventMsg::UndoStarted(..)
+                | EventMsg::RawResponseItem(..)
+                | EventMsg::ItemStarted(..)
+                | EventMsg::ItemCompleted(..)
+                | EventMsg::AgentMessageContentDelta(..)
+                | EventMsg::UndoCompleted(..)
+                | EventMsg::ReasoningContentDelta(..)
+                | EventMsg::ReasoningRawContentDelta(..) => {}
             }
         }
     });

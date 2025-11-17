@@ -8,10 +8,6 @@ members = [
     "crates/utils",
     "crates/local-deployment",
     "crates/deployment",
-    # Vendored codex dependencies (patched for thread-safety)
-    "vendor/codex/codex-rs/protocol",
-    "vendor/codex/codex-rs/app-server-protocol",
-    "vendor/codex/codex-rs/mcp-types",
 ]
 
 [workspace.dependencies]
@@ -28,10 +24,10 @@ openssl-sys = { version = "0.9", features = ["vendored"] }
 ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
-# Vendored codex dependencies (patched for thread-safety with LazyLock)
-codex-protocol = { path = "vendor/codex/codex-rs/protocol" }
-codex-app-server-protocol = { path = "vendor/codex/codex-rs/app-server-protocol" }
-mcp-types = { path = "vendor/codex/codex-rs/mcp-types" }
+# Codex dependencies from namastexlabs fork (v0.58.0 with schemars 1.0.4 patch)
+codex-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-protocol" }
+codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-app-server-protocol" }
+mcp-types = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "mcp-types" }
 
 [profile.release]
 debug = true
